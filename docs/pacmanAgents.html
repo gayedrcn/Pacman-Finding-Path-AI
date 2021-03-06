@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>pacmanAgents.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># pacmanAgents.py</span>
+<span class="hl slc"># ---------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">from</span> pacman <span class="hl kwa">import</span> Directions
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Agent
+<span class="hl kwa">import</span> random
+<span class="hl kwa">import</span> game
+<span class="hl kwa">import</span> util
+
+<span class="hl kwa">class</span> <span class="hl kwd">LeftTurnAgent</span><span class="hl opt">(</span>game<span class="hl opt">.</span>Agent<span class="hl opt">):</span>
+    <span class="hl str">&quot;An agent that turns left at every opportunity&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getAction</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        legal <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getLegalPacmanActions</span><span class="hl opt">()</span>
+        current <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getPacmanState</span><span class="hl opt">().</span>configuration<span class="hl opt">.</span>direction
+        <span class="hl kwa">if</span> current <span class="hl opt">==</span> Directions<span class="hl opt">.</span>STOP<span class="hl opt">:</span> current <span class="hl opt">=</span> Directions<span class="hl opt">.</span>NORTH
+        left <span class="hl opt">=</span> Directions<span class="hl opt">.</span>LEFT<span class="hl opt">[</span>current<span class="hl opt">]</span>
+        <span class="hl kwa">if</span> left <span class="hl kwa">in</span> legal<span class="hl opt">:</span> <span class="hl kwa">return</span> left
+        <span class="hl kwa">if</span> current <span class="hl kwa">in</span> legal<span class="hl opt">:</span> <span class="hl kwa">return</span> current
+        <span class="hl kwa">if</span> Directions<span class="hl opt">.</span>RIGHT<span class="hl opt">[</span>current<span class="hl opt">]</span> <span class="hl kwa">in</span> legal<span class="hl opt">:</span> <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>RIGHT<span class="hl opt">[</span>current<span class="hl opt">]</span>
+        <span class="hl kwa">if</span> Directions<span class="hl opt">.</span>LEFT<span class="hl opt">[</span>left<span class="hl opt">]</span> <span class="hl kwa">in</span> legal<span class="hl opt">:</span> <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>LEFT<span class="hl opt">[</span>left<span class="hl opt">]</span>
+        <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>STOP
+
+<span class="hl kwa">class</span> <span class="hl kwd">GreedyAgent</span><span class="hl opt">(</span>Agent<span class="hl opt">):</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> evalFn<span class="hl opt">=</span><span class="hl str">&quot;scoreEvaluation&quot;</span><span class="hl opt">):</span>
+        self<span class="hl opt">.</span>evaluationFunction <span class="hl opt">=</span> util<span class="hl opt">.</span><span class="hl kwd">lookup</span><span class="hl opt">(</span>evalFn<span class="hl opt">,</span> <span class="hl kwb">globals</span><span class="hl opt">())</span>
+        <span class="hl kwa">assert</span> self<span class="hl opt">.</span>evaluationFunction <span class="hl opt">!=</span> <span class="hl kwa">None</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getAction</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl slc"># Generate candidate actions</span>
+        legal <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getLegalPacmanActions</span><span class="hl opt">()</span>
+        <span class="hl kwa">if</span> Directions<span class="hl opt">.</span>STOP <span class="hl kwa">in</span> legal<span class="hl opt">:</span> legal<span class="hl opt">.</span><span class="hl kwd">remove</span><span class="hl opt">(</span>Directions<span class="hl opt">.</span>STOP<span class="hl opt">)</span>
+
+        successors <span class="hl opt">= [(</span>state<span class="hl opt">.</span><span class="hl kwd">generateSuccessor</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> action<span class="hl opt">),</span> action<span class="hl opt">)</span> <span class="hl kwa">for</span> action <span class="hl kwa">in</span> legal<span class="hl opt">]</span>
+        scored <span class="hl opt">= [(</span>self<span class="hl opt">.</span><span class="hl kwd">evaluationFunction</span><span class="hl opt">(</span>state<span class="hl opt">),</span> action<span class="hl opt">)</span> <span class="hl kwa">for</span> state<span class="hl opt">,</span> action <span class="hl kwa">in</span> successors<span class="hl opt">]</span>
+        bestScore <span class="hl opt">=</span> <span class="hl kwb">max</span><span class="hl opt">(</span>scored<span class="hl opt">)[</span><span class="hl num">0</span><span class="hl opt">]</span>
+        bestActions <span class="hl opt">= [</span>pair<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span> <span class="hl kwa">for</span> pair <span class="hl kwa">in</span> scored <span class="hl kwa">if</span> pair<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] ==</span> bestScore<span class="hl opt">]</span>
+        <span class="hl kwa">return</span> random<span class="hl opt">.</span><span class="hl kwd">choice</span><span class="hl opt">(</span>bestActions<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">scoreEvaluation</span><span class="hl opt">(</span>state<span class="hl opt">):</span>
+    <span class="hl kwa">return</span> state<span class="hl opt">.</span><span class="hl kwd">getScore</span><span class="hl opt">()</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>textDisplay.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># textDisplay.py</span>
+<span class="hl slc"># --------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">import</span> pacman<span class="hl opt">,</span> time
+
+DRAW_EVERY <span class="hl opt">=</span> <span class="hl num">1</span>
+SLEEP_TIME <span class="hl opt">=</span> <span class="hl num">0</span> <span class="hl slc"># This can be overwritten by __init__</span>
+DISPLAY_MOVES <span class="hl opt">=</span> <span class="hl kwa">False</span>
+QUIET <span class="hl opt">=</span> <span class="hl kwa">False</span> <span class="hl slc"># Supresses output</span>
+
+<span class="hl kwa">class</span> NullGraphics<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">initialize</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">,</span> isBlue <span class="hl opt">=</span> <span class="hl kwa">False</span><span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">update</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">pause</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        time<span class="hl opt">.</span><span class="hl kwd">sleep</span><span class="hl opt">(</span>SLEEP_TIME<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">draw</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl kwa">print</span> state
+
+    <span class="hl kwa">def</span> <span class="hl kwd">finish</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+<span class="hl kwa">class</span> PacmanGraphics<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> speed<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+        <span class="hl kwa">if</span> speed <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            <span class="hl kwa">global</span> SLEEP_TIME
+            SLEEP_TIME <span class="hl opt">=</span> speed
+
+    <span class="hl kwa">def</span> <span class="hl kwd">initialize</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">,</span> isBlue <span class="hl opt">=</span> <span class="hl kwa">False</span><span class="hl opt">):</span>
+        self<span class="hl opt">.</span><span class="hl kwd">draw</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+        self<span class="hl opt">.</span><span class="hl kwd">pause</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>turn <span class="hl opt">=</span> <span class="hl num">0</span>
+        self<span class="hl opt">.</span>agentCounter <span class="hl opt">=</span> <span class="hl num">0</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">update</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        numAgents <span class="hl opt">=</span> <span class="hl kwb">len</span><span class="hl opt">(</span>state<span class="hl opt">.</span>agentStates<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>agentCounter <span class="hl opt">= (</span>self<span class="hl opt">.</span>agentCounter <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">) %</span> numAgents
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>agentCounter <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>turn <span class="hl opt">+=</span> <span class="hl num">1</span>
+            <span class="hl kwa">if</span> DISPLAY_MOVES<span class="hl opt">:</span>
+                ghosts <span class="hl opt">= [</span>pacman<span class="hl opt">.</span><span class="hl kwd">nearestPoint</span><span class="hl opt">(</span>state<span class="hl opt">.</span><span class="hl kwd">getGhostPosition</span><span class="hl opt">(</span>i<span class="hl opt">))</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span> numAgents<span class="hl opt">)]</span>
+                <span class="hl kwa">print</span> <span class="hl str">&quot;%4d) P: %-8s&quot;</span> <span class="hl opt">% (</span>self<span class="hl opt">.</span>turn<span class="hl opt">,</span> <span class="hl kwb">str</span><span class="hl opt">(</span>pacman<span class="hl opt">.</span><span class="hl kwd">nearestPoint</span><span class="hl opt">(</span>state<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()))),</span><span class="hl str">'| Score: %-5d'</span> <span class="hl opt">%</span> state<span class="hl opt">.</span>score<span class="hl opt">,</span><span class="hl str">'| Ghosts:'</span><span class="hl opt">,</span> ghosts
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>turn <span class="hl opt">%</span> DRAW_EVERY <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+                self<span class="hl opt">.</span><span class="hl kwd">draw</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+                self<span class="hl opt">.</span><span class="hl kwd">pause</span><span class="hl opt">()</span>
+        <span class="hl kwa">if</span> state<span class="hl opt">.</span>_win <span class="hl kwa">or</span> state<span class="hl opt">.</span>_lose<span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">draw</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">pause</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        time<span class="hl opt">.</span><span class="hl kwd">sleep</span><span class="hl opt">(</span>SLEEP_TIME<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">draw</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl kwa">print</span> state
+
+    <span class="hl kwa">def</span> <span class="hl kwd">finish</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

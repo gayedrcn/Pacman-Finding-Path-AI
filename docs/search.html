@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>search.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># search.py</span>
+<span class="hl slc"># ---------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">In search.py, you will implement generic search algorithms which are called</span>
+<span class="hl str">by Pacman agents (in searchAgents.py).</span>
+<span class="hl str">&quot;&quot;&quot;</span>
+
+<span class="hl kwa">import</span> util
+
+<span class="hl kwa">class</span> SearchProblem<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    This class outlines the structure of a search problem, but doesn't implement</span>
+<span class="hl str">    any of the methods (in object-oriented terminology: an abstract class).</span>
+<span class="hl str"></span>
+<span class="hl str">    You do not need to change anything in this class, ever.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getStartState</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the start state for the search problem</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoalState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          state: Search state</span>
+<span class="hl str"></span>
+<span class="hl str">        Returns True if and only if the state is a valid goal state</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getSuccessors</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          state: Search state</span>
+<span class="hl str"></span>
+<span class="hl str">        For a given state, this should return a list of triples,</span>
+<span class="hl str">        (successor, action, stepCost), where 'successor' is a</span>
+<span class="hl str">        successor to the current state, 'action' is the action</span>
+<span class="hl str">        required to get there, and 'stepCost' is the incremental</span>
+<span class="hl str">        cost of expanding to that successor</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getCostOfActions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> actions<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">         actions: A list of actions to take</span>
+<span class="hl str"></span>
+<span class="hl str">        This method returns the total cost of a particular sequence of actions.  The sequence must</span>
+<span class="hl str">        be composed of legal moves</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+
+<span class="hl kwa">def</span> <span class="hl kwd">tinyMazeSearch</span><span class="hl opt">(</span>problem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Returns a sequence of moves that solves tinyMaze.  For any other</span>
+<span class="hl str">    maze, the sequence of moves will be incorrect, so only use this for tinyMaze</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">from</span> game <span class="hl kwa">import</span> Directions
+    s <span class="hl opt">=</span> Directions<span class="hl opt">.</span>SOUTH
+    w <span class="hl opt">=</span> Directions<span class="hl opt">.</span>WEST
+    <span class="hl kwa">return</span>  <span class="hl opt">[</span>s<span class="hl opt">,</span>s<span class="hl opt">,</span>w<span class="hl opt">,</span>s<span class="hl opt">,</span>w<span class="hl opt">,</span>w<span class="hl opt">,</span>s<span class="hl opt">,</span>w<span class="hl opt">]</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">depthFirstSearch</span><span class="hl opt">(</span>problem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Search the deepest nodes in the search tree first</span>
+<span class="hl str"></span>
+<span class="hl str">    Your search algorithm needs to return a list of actions that reaches</span>
+<span class="hl str">    the goal.  Make sure to implement a graph search algorithm</span>
+<span class="hl str"></span>
+<span class="hl str">    To get started, you might want to try some of these simple commands to</span>
+<span class="hl str">    understand the search problem that is being passed in:</span>
+<span class="hl str"></span>
+<span class="hl str">    print &quot;Start:&quot;, problem.getStartState()</span>
+<span class="hl str">    print &quot;Is the start a goal?&quot;, problem.isGoalState(problem.getStartState())</span>
+<span class="hl str">    print &quot;Start's successors:&quot;, problem.getSuccessors(problem.getStartState())</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+    util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">breadthFirstSearch</span><span class="hl opt">(</span>problem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Search the shallowest nodes in the search tree first.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+    util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">uniformCostSearch</span><span class="hl opt">(</span>problem<span class="hl opt">):</span>
+    <span class="hl str">&quot;Search the node of least total cost first. &quot;</span>
+    <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+    util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">nullHeuristic</span><span class="hl opt">(</span>state<span class="hl opt">,</span> problem<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A heuristic function estimates the cost from the current state to the nearest</span>
+<span class="hl str">    goal in the provided SearchProblem.  This heuristic is trivial.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">return</span> <span class="hl num">0</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">aStarSearch</span><span class="hl opt">(</span>problem<span class="hl opt">,</span> heuristic<span class="hl opt">=</span>nullHeuristic<span class="hl opt">):</span>
+    <span class="hl str">&quot;Search the node that has the lowest combined cost and heuristic first.&quot;</span>
+    <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+    util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+
+<span class="hl slc"># Abbreviations</span>
+bfs <span class="hl opt">=</span> breadthFirstSearch
+dfs <span class="hl opt">=</span> depthFirstSearch
+astar <span class="hl opt">=</span> aStarSearch
+ucs <span class="hl opt">=</span> uniformCostSearch
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

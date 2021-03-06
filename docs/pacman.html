@@ -1,0 +1,690 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>pacman.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># pacman.py</span>
+<span class="hl slc"># ---------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">Pacman.py holds the logic for the classic pacman game along with the main</span>
+<span class="hl str">code to run a game.  This file is divided into three sections:</span>
+<span class="hl str"></span>
+<span class="hl str">  (i)  Your interface to the pacman world:</span>
+<span class="hl str">          Pacman is a complex environment.  You probably don't want to</span>
+<span class="hl str">          read through all of the code we wrote to make the game runs</span>
+<span class="hl str">          correctly.  This section contains the parts of the code</span>
+<span class="hl str">          that you will need to understand in order to complete the</span>
+<span class="hl str">          project.  There is also some code in game.py that you should</span>
+<span class="hl str">          understand.</span>
+<span class="hl str"></span>
+<span class="hl str">  (ii)  The hidden secrets of pacman:</span>
+<span class="hl str">          This section contains all of the logic code that the pacman</span>
+<span class="hl str">          environment uses to decide who can move where, who dies when</span>
+<span class="hl str">          things collide, etc.  You shouldn't need to read this section</span>
+<span class="hl str">          of code, but you can if you want.</span>
+<span class="hl str"></span>
+<span class="hl str">  (iii) Framework to start a game:</span>
+<span class="hl str">          The final section contains the code for reading the command</span>
+<span class="hl str">          you use to set up the game, then starting up a new game, along with</span>
+<span class="hl str">          linking in all the external parts (agent functions, graphics).</span>
+<span class="hl str">          Check this section out to see all the options available to you.</span>
+<span class="hl str"></span>
+<span class="hl str">To play your first game, type 'python pacman.py' from the command line.</span>
+<span class="hl str">The keys are 'a', 's', 'd', and 'w' to move (or arrow keys).  Have fun!</span>
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> GameStateData
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Game
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Directions
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Actions
+<span class="hl kwa">from</span> util <span class="hl kwa">import</span> nearestPoint
+<span class="hl kwa">from</span> util <span class="hl kwa">import</span> manhattanDistance
+<span class="hl kwa">import</span> util<span class="hl opt">,</span> layout
+<span class="hl kwa">import</span> sys<span class="hl opt">,</span> types<span class="hl opt">,</span> time<span class="hl opt">,</span> random<span class="hl opt">,</span> os
+
+<span class="hl slc">###################################################</span>
+<span class="hl slc"># YOUR INTERFACE TO THE PACMAN WORLD: A GameState #</span>
+<span class="hl slc">###################################################</span>
+
+<span class="hl kwa">class</span> GameState<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A GameState specifies the full game state, including the food, capsules,</span>
+<span class="hl str">    agent configurations and score changes.</span>
+<span class="hl str"></span>
+<span class="hl str">    GameStates are used by the Game object to capture the actual state of the game and</span>
+<span class="hl str">    can be used by agents to reason about the game.</span>
+<span class="hl str"></span>
+<span class="hl str">    Much of the information in a GameState is stored in a GameStateData object.  We</span>
+<span class="hl str">    strongly suggest that you access that data via the accessor methods below rather</span>
+<span class="hl str">    than referring to the GameStateData object directly.</span>
+<span class="hl str"></span>
+<span class="hl str">    Note that in classic Pacman, Pacman is always agent 0.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl slc">####################################################</span>
+    <span class="hl slc"># Accessor methods: use these to access state data #</span>
+    <span class="hl slc">####################################################</span>
+
+    <span class="hl slc"># static variable keeps track of which states have had getLegalActions called</span>
+    explored <span class="hl opt">=</span> <span class="hl kwb">set</span><span class="hl opt">()</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">getAndResetExplored</span><span class="hl opt">():</span>
+        tmp <span class="hl opt">=</span> GameState<span class="hl opt">.</span>explored<span class="hl opt">.</span><span class="hl kwd">copy</span><span class="hl opt">()</span>
+        GameState<span class="hl opt">.</span>explored <span class="hl opt">=</span> <span class="hl kwb">set</span><span class="hl opt">()</span>
+        <span class="hl kwa">return</span> tmp
+    getAndResetExplored <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span>getAndResetExplored<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> self<span class="hl opt">,</span> agentIndex<span class="hl opt">=</span><span class="hl num">0</span> <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the legal actions for the agent specified.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        GameState<span class="hl opt">.</span>explored<span class="hl opt">.</span><span class="hl kwd">add</span><span class="hl opt">(</span>self<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span><span class="hl kwd">isWin</span><span class="hl opt">()</span> <span class="hl kwa">or</span> self<span class="hl opt">.</span><span class="hl kwd">isLose</span><span class="hl opt">():</span> <span class="hl kwa">return</span> <span class="hl opt">[]</span>
+
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>  <span class="hl slc"># Pacman is moving</span>
+            <span class="hl kwa">return</span> PacmanRules<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> self <span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> GhostRules<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> self<span class="hl opt">,</span> agentIndex <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">generateSuccessor</span><span class="hl opt">(</span> self<span class="hl opt">,</span> agentIndex<span class="hl opt">,</span> action<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the successor state after the specified agent takes the action.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl slc"># Check that successors exist</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span><span class="hl kwd">isWin</span><span class="hl opt">()</span> <span class="hl kwa">or</span> self<span class="hl opt">.</span><span class="hl kwd">isLose</span><span class="hl opt">():</span> <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">'Can</span><span class="hl esc">\'</span><span class="hl str">t generate a successor of a terminal state.'</span><span class="hl opt">)</span>
+
+        <span class="hl slc"># Copy current state</span>
+        state <span class="hl opt">=</span> <span class="hl kwd">GameState</span><span class="hl opt">(</span>self<span class="hl opt">)</span>
+
+        <span class="hl slc"># Let agent's logic deal with its action's effects on the board</span>
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>  <span class="hl slc"># Pacman is moving</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>_eaten <span class="hl opt">= [</span><span class="hl kwa">False for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>state<span class="hl opt">.</span><span class="hl kwd">getNumAgents</span><span class="hl opt">())]</span>
+            PacmanRules<span class="hl opt">.</span><span class="hl kwd">applyAction</span><span class="hl opt">(</span> state<span class="hl opt">,</span> action <span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>                <span class="hl slc"># A ghost is moving</span>
+            GhostRules<span class="hl opt">.</span><span class="hl kwd">applyAction</span><span class="hl opt">(</span> state<span class="hl opt">,</span> action<span class="hl opt">,</span> agentIndex <span class="hl opt">)</span>
+
+        <span class="hl slc"># Time passes</span>
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>scoreChange <span class="hl opt">+= -</span>TIME_PENALTY <span class="hl slc"># Penalty for waiting around</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            GhostRules<span class="hl opt">.</span><span class="hl kwd">decrementTimer</span><span class="hl opt">(</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>agentIndex<span class="hl opt">] )</span>
+
+        <span class="hl slc"># Resolve multi-agent effects</span>
+        GhostRules<span class="hl opt">.</span><span class="hl kwd">checkDeath</span><span class="hl opt">(</span> state<span class="hl opt">,</span> agentIndex <span class="hl opt">)</span>
+
+        <span class="hl slc"># Book keeping</span>
+        state<span class="hl opt">.</span>data<span class="hl opt">.</span>_agentMoved <span class="hl opt">=</span> agentIndex
+        state<span class="hl opt">.</span>data<span class="hl opt">.</span>score <span class="hl opt">+=</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>scoreChange
+        <span class="hl kwa">return</span> state
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getLegalPacmanActions</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> <span class="hl num">0</span> <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">generatePacmanSuccessor</span><span class="hl opt">(</span> self<span class="hl opt">,</span> action <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Generates the successor state after the specified pacman move</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span><span class="hl kwd">generateSuccessor</span><span class="hl opt">(</span> <span class="hl num">0</span><span class="hl opt">,</span> action <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getPacmanState</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns an AgentState object for pacman (in game.py)</span>
+<span class="hl str"></span>
+<span class="hl str">        state.pos gives the current position</span>
+<span class="hl str">        state.direction gives the travel vector</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">].</span><span class="hl kwd">copy</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getPacmanPosition</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">].</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getGhostStates</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">:]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getGhostState</span><span class="hl opt">(</span> self<span class="hl opt">,</span> agentIndex <span class="hl opt">):</span>
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span> <span class="hl kwa">or</span> agentIndex <span class="hl opt">&gt;=</span> self<span class="hl opt">.</span><span class="hl kwd">getNumAgents</span><span class="hl opt">():</span>
+            <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">&quot;Invalid index passed to getGhostState&quot;</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>agentIndex<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getGhostPosition</span><span class="hl opt">(</span> self<span class="hl opt">,</span> agentIndex <span class="hl opt">):</span>
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">&quot;Pacman's index passed to getGhostPosition&quot;</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>agentIndex<span class="hl opt">].</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getGhostPositions</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl opt">[</span>s<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span> <span class="hl kwa">for</span> s <span class="hl kwa">in</span> self<span class="hl opt">.</span><span class="hl kwd">getGhostStates</span><span class="hl opt">()]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getNumAgents</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getScore</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>score
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getCapsules</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns a list of positions (x,y) of the remaining capsules.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>capsules
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getNumFood</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>food<span class="hl opt">.</span><span class="hl kwd">count</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getFood</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns a Grid of boolean food indicator variables.</span>
+<span class="hl str"></span>
+<span class="hl str">        Grids can be accessed via list notation, so to check</span>
+<span class="hl str">        if there is food at (x,y), just call</span>
+<span class="hl str"></span>
+<span class="hl str">        currentFood = state.getFood()</span>
+<span class="hl str">        if currentFood[x][y] == True: ...</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>food
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getWalls</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns a Grid of boolean wall indicator variables.</span>
+<span class="hl str"></span>
+<span class="hl str">        Grids can be accessed via list notation, so to check</span>
+<span class="hl str">        if there is a wall at (x,y), just call</span>
+<span class="hl str"></span>
+<span class="hl str">        walls = state.getWalls()</span>
+<span class="hl str">        if walls[x][y] == True: ...</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>layout<span class="hl opt">.</span>walls
+
+    <span class="hl kwa">def</span> <span class="hl kwd">hasFood</span><span class="hl opt">(</span>self<span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>food<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">hasWall</span><span class="hl opt">(</span>self<span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>layout<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isLose</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>_lose
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isWin</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span>_win
+
+    <span class="hl slc">#############################################</span>
+    <span class="hl slc">#             Helper methods:               #</span>
+    <span class="hl slc"># You shouldn't need to call these directly #</span>
+    <span class="hl slc">#############################################</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> prevState <span class="hl opt">=</span> <span class="hl kwa">None</span> <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Generates a new state by copying information from its predecessor.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> prevState <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl slc"># Initial state</span>
+            self<span class="hl opt">.</span>data <span class="hl opt">=</span> <span class="hl kwd">GameStateData</span><span class="hl opt">(</span>prevState<span class="hl opt">.</span>data<span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>data <span class="hl opt">=</span> <span class="hl kwd">GameStateData</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">deepCopy</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        state <span class="hl opt">=</span> <span class="hl kwd">GameState</span><span class="hl opt">(</span> self <span class="hl opt">)</span>
+        state<span class="hl opt">.</span>data <span class="hl opt">=</span> self<span class="hl opt">.</span>data<span class="hl opt">.</span><span class="hl kwd">deepCopy</span><span class="hl opt">()</span>
+        <span class="hl kwa">return</span> state
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__eq__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> other <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Allows two states to be compared.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>data <span class="hl opt">==</span> other<span class="hl opt">.</span>data
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__hash__</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Allows states to be keys of dictionaries.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">hash</span><span class="hl opt">(</span> self<span class="hl opt">.</span>data <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__str__</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+
+        <span class="hl kwa">return</span> <span class="hl kwb">str</span><span class="hl opt">(</span>self<span class="hl opt">.</span>data<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">initialize</span><span class="hl opt">(</span> self<span class="hl opt">,</span> layout<span class="hl opt">,</span> numGhostAgents<span class="hl opt">=</span><span class="hl num">1000</span> <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Creates an initial game state from a layout array (see layout.py).</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        self<span class="hl opt">.</span>data<span class="hl opt">.</span><span class="hl kwd">initialize</span><span class="hl opt">(</span>layout<span class="hl opt">,</span> numGhostAgents<span class="hl opt">)</span>
+
+<span class="hl slc">############################################################################</span>
+<span class="hl slc">#                     THE HIDDEN SECRETS OF PACMAN                         #</span>
+<span class="hl slc">#                                                                          #</span>
+<span class="hl slc"># You shouldn't need to look through the code in this section of the file. #</span>
+<span class="hl slc">############################################################################</span>
+
+SCARED_TIME <span class="hl opt">=</span> <span class="hl num">40</span>    <span class="hl slc"># Moves ghosts are scared</span>
+COLLISION_TOLERANCE <span class="hl opt">=</span> <span class="hl num">0.7</span> <span class="hl slc"># How close ghosts must be to Pacman to kill</span>
+TIME_PENALTY <span class="hl opt">=</span> <span class="hl num">1</span> <span class="hl slc"># Number of points lost each round</span>
+
+<span class="hl kwa">class</span> ClassicGameRules<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    These game rules manage the control flow of a game, deciding when</span>
+<span class="hl str">    and how the game starts and ends.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> timeout<span class="hl opt">=</span><span class="hl num">30</span><span class="hl opt">):</span>
+        self<span class="hl opt">.</span>timeout <span class="hl opt">=</span> timeout
+
+    <span class="hl kwa">def</span> <span class="hl kwd">newGame</span><span class="hl opt">(</span> self<span class="hl opt">,</span> layout<span class="hl opt">,</span> pacmanAgent<span class="hl opt">,</span> ghostAgents<span class="hl opt">,</span> display<span class="hl opt">,</span> quiet <span class="hl opt">=</span> <span class="hl kwa">False</span><span class="hl opt">,</span> catchExceptions<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">):</span>
+        agents <span class="hl opt">= [</span>pacmanAgent<span class="hl opt">] +</span> ghostAgents<span class="hl opt">[:</span>layout<span class="hl opt">.</span><span class="hl kwd">getNumGhosts</span><span class="hl opt">()]</span>
+        initState <span class="hl opt">=</span> <span class="hl kwd">GameState</span><span class="hl opt">()</span>
+        initState<span class="hl opt">.</span><span class="hl kwd">initialize</span><span class="hl opt">(</span> layout<span class="hl opt">,</span> <span class="hl kwb">len</span><span class="hl opt">(</span>ghostAgents<span class="hl opt">) )</span>
+        game <span class="hl opt">=</span> <span class="hl kwd">Game</span><span class="hl opt">(</span>agents<span class="hl opt">,</span> display<span class="hl opt">,</span> self<span class="hl opt">,</span> catchExceptions<span class="hl opt">=</span>catchExceptions<span class="hl opt">)</span>
+        game<span class="hl opt">.</span>state <span class="hl opt">=</span> initState
+        self<span class="hl opt">.</span>initialState <span class="hl opt">=</span> initState<span class="hl opt">.</span><span class="hl kwd">deepCopy</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>quiet <span class="hl opt">=</span> quiet
+        <span class="hl kwa">return</span> game
+
+    <span class="hl kwa">def</span> <span class="hl kwd">process</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">,</span> game<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Checks to see whether it is time to end the game.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> state<span class="hl opt">.</span><span class="hl kwd">isWin</span><span class="hl opt">():</span> self<span class="hl opt">.</span><span class="hl kwd">win</span><span class="hl opt">(</span>state<span class="hl opt">,</span> game<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> state<span class="hl opt">.</span><span class="hl kwd">isLose</span><span class="hl opt">():</span> self<span class="hl opt">.</span><span class="hl kwd">lose</span><span class="hl opt">(</span>state<span class="hl opt">,</span> game<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">win</span><span class="hl opt">(</span> self<span class="hl opt">,</span> state<span class="hl opt">,</span> game <span class="hl opt">):</span>
+        <span class="hl kwa">if not</span> self<span class="hl opt">.</span>quiet<span class="hl opt">:</span> <span class="hl kwa">print</span> <span class="hl str">&quot;Pacman emerges victorious! Score: %d&quot;</span> <span class="hl opt">%</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>score
+        game<span class="hl opt">.</span>gameOver <span class="hl opt">=</span> <span class="hl kwa">True</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">lose</span><span class="hl opt">(</span> self<span class="hl opt">,</span> state<span class="hl opt">,</span> game <span class="hl opt">):</span>
+        <span class="hl kwa">if not</span> self<span class="hl opt">.</span>quiet<span class="hl opt">:</span> <span class="hl kwa">print</span> <span class="hl str">&quot;Pacman died! Score: %d&quot;</span> <span class="hl opt">%</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>score
+        game<span class="hl opt">.</span>gameOver <span class="hl opt">=</span> <span class="hl kwa">True</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getProgress</span><span class="hl opt">(</span>self<span class="hl opt">,</span> game<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">float</span><span class="hl opt">(</span>game<span class="hl opt">.</span>state<span class="hl opt">.</span><span class="hl kwd">getNumFood</span><span class="hl opt">()) /</span> self<span class="hl opt">.</span>initialState<span class="hl opt">.</span><span class="hl kwd">getNumFood</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">agentCrash</span><span class="hl opt">(</span>self<span class="hl opt">,</span> game<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">print</span> <span class="hl str">&quot;Pacman crashed&quot;</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">print</span> <span class="hl str">&quot;A ghost crashed&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getMaxTotalTime</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>timeout
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getMaxStartupTime</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>timeout
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getMoveWarningTime</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>timeout
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getMoveTimeout</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>timeout
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getMaxTimeWarnings</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl num">0</span>
+
+<span class="hl kwa">class</span> PacmanRules<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    These functions govern how pacman interacts with his environment under</span>
+<span class="hl str">    the classic game rules.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    PACMAN_SPEED<span class="hl opt">=</span><span class="hl num">1</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> state <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns a list of possible actions.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> Actions<span class="hl opt">.</span><span class="hl kwd">getPossibleActions</span><span class="hl opt">(</span> state<span class="hl opt">.</span><span class="hl kwd">getPacmanState</span><span class="hl opt">().</span>configuration<span class="hl opt">,</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>layout<span class="hl opt">.</span>walls <span class="hl opt">)</span>
+    getLegalActions <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> getLegalActions <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">applyAction</span><span class="hl opt">(</span> state<span class="hl opt">,</span> action <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Edits the state to reflect the results of the action.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        legal <span class="hl opt">=</span> PacmanRules<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> state <span class="hl opt">)</span>
+        <span class="hl kwa">if</span> action <span class="hl kwa">not in</span> legal<span class="hl opt">:</span>
+            <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">&quot;Illegal action &quot;</span> <span class="hl opt">+</span> <span class="hl kwb">str</span><span class="hl opt">(</span>action<span class="hl opt">))</span>
+
+        pacmanState <span class="hl opt">=</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+
+        <span class="hl slc"># Update Configuration</span>
+        vector <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span> action<span class="hl opt">,</span> PacmanRules<span class="hl opt">.</span>PACMAN_SPEED <span class="hl opt">)</span>
+        pacmanState<span class="hl opt">.</span>configuration <span class="hl opt">=</span> pacmanState<span class="hl opt">.</span>configuration<span class="hl opt">.</span><span class="hl kwd">generateSuccessor</span><span class="hl opt">(</span> vector <span class="hl opt">)</span>
+
+        <span class="hl slc"># Eat</span>
+        next <span class="hl opt">=</span> pacmanState<span class="hl opt">.</span>configuration<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span>
+        nearest <span class="hl opt">=</span> <span class="hl kwd">nearestPoint</span><span class="hl opt">(</span> next <span class="hl opt">)</span>
+        <span class="hl kwa">if</span> <span class="hl kwd">manhattanDistance</span><span class="hl opt">(</span> nearest<span class="hl opt">,</span> next <span class="hl opt">) &lt;=</span> <span class="hl num">0.5</span> <span class="hl opt">:</span>
+            <span class="hl slc"># Remove food</span>
+            PacmanRules<span class="hl opt">.</span><span class="hl kwd">consume</span><span class="hl opt">(</span> nearest<span class="hl opt">,</span> state <span class="hl opt">)</span>
+    applyAction <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> applyAction <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">consume</span><span class="hl opt">(</span> position<span class="hl opt">,</span> state <span class="hl opt">):</span>
+        x<span class="hl opt">,</span>y <span class="hl opt">=</span> position
+        <span class="hl slc"># Eat food</span>
+        <span class="hl kwa">if</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>food<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]:</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>scoreChange <span class="hl opt">+=</span> <span class="hl num">10</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>food <span class="hl opt">=</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>food<span class="hl opt">.</span><span class="hl kwd">copy</span><span class="hl opt">()</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>food<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">] =</span> <span class="hl kwa">False</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>_foodEaten <span class="hl opt">=</span> position
+            <span class="hl slc"># TODO: cache numFood?</span>
+            numFood <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getNumFood</span><span class="hl opt">()</span>
+            <span class="hl kwa">if</span> numFood <span class="hl opt">==</span> <span class="hl num">0</span> <span class="hl kwa">and not</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>_lose<span class="hl opt">:</span>
+                state<span class="hl opt">.</span>data<span class="hl opt">.</span>scoreChange <span class="hl opt">+=</span> <span class="hl num">500</span>
+                state<span class="hl opt">.</span>data<span class="hl opt">.</span>_win <span class="hl opt">=</span> <span class="hl kwa">True</span>
+        <span class="hl slc"># Eat capsule</span>
+        <span class="hl kwa">if</span><span class="hl opt">(</span> position <span class="hl kwa">in</span> state<span class="hl opt">.</span><span class="hl kwd">getCapsules</span><span class="hl opt">() ):</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>capsules<span class="hl opt">.</span><span class="hl kwd">remove</span><span class="hl opt">(</span> position <span class="hl opt">)</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>_capsuleEaten <span class="hl opt">=</span> position
+            <span class="hl slc"># Reset all ghosts' scared timers</span>
+            <span class="hl kwa">for</span> index <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">1</span><span class="hl opt">,</span> <span class="hl kwb">len</span><span class="hl opt">(</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates <span class="hl opt">) ):</span>
+                state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>index<span class="hl opt">].</span>scaredTimer <span class="hl opt">=</span> SCARED_TIME
+    consume <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> consume <span class="hl opt">)</span>
+
+<span class="hl kwa">class</span> GhostRules<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    These functions dictate how ghosts interact with their environment.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    GHOST_SPEED<span class="hl opt">=</span><span class="hl num">1.0</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> state<span class="hl opt">,</span> ghostIndex <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Ghosts cannot stop, and cannot turn around unless they</span>
+<span class="hl str">        reach a dead end, but can turn 90 degrees at intersections.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        conf <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getGhostState</span><span class="hl opt">(</span> ghostIndex <span class="hl opt">).</span>configuration
+        possibleActions <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">getPossibleActions</span><span class="hl opt">(</span> conf<span class="hl opt">,</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>layout<span class="hl opt">.</span>walls <span class="hl opt">)</span>
+        reverse <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">reverseDirection</span><span class="hl opt">(</span> conf<span class="hl opt">.</span>direction <span class="hl opt">)</span>
+        <span class="hl kwa">if</span> Directions<span class="hl opt">.</span>STOP <span class="hl kwa">in</span> possibleActions<span class="hl opt">:</span>
+            possibleActions<span class="hl opt">.</span><span class="hl kwd">remove</span><span class="hl opt">(</span> Directions<span class="hl opt">.</span>STOP <span class="hl opt">)</span>
+        <span class="hl kwa">if</span> reverse <span class="hl kwa">in</span> possibleActions <span class="hl kwa">and</span> <span class="hl kwb">len</span><span class="hl opt">(</span> possibleActions <span class="hl opt">) &gt;</span> <span class="hl num">1</span><span class="hl opt">:</span>
+            possibleActions<span class="hl opt">.</span><span class="hl kwd">remove</span><span class="hl opt">(</span> reverse <span class="hl opt">)</span>
+        <span class="hl kwa">return</span> possibleActions
+    getLegalActions <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> getLegalActions <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">applyAction</span><span class="hl opt">(</span> state<span class="hl opt">,</span> action<span class="hl opt">,</span> ghostIndex<span class="hl opt">):</span>
+
+        legal <span class="hl opt">=</span> GhostRules<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> state<span class="hl opt">,</span> ghostIndex <span class="hl opt">)</span>
+        <span class="hl kwa">if</span> action <span class="hl kwa">not in</span> legal<span class="hl opt">:</span>
+            <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">&quot;Illegal ghost action &quot;</span> <span class="hl opt">+</span> <span class="hl kwb">str</span><span class="hl opt">(</span>action<span class="hl opt">))</span>
+
+        ghostState <span class="hl opt">=</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>ghostIndex<span class="hl opt">]</span>
+        speed <span class="hl opt">=</span> GhostRules<span class="hl opt">.</span>GHOST_SPEED
+        <span class="hl kwa">if</span> ghostState<span class="hl opt">.</span>scaredTimer <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span> speed <span class="hl opt">/=</span> <span class="hl num">2.0</span>
+        vector <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span> action<span class="hl opt">,</span> speed <span class="hl opt">)</span>
+        ghostState<span class="hl opt">.</span>configuration <span class="hl opt">=</span> ghostState<span class="hl opt">.</span>configuration<span class="hl opt">.</span><span class="hl kwd">generateSuccessor</span><span class="hl opt">(</span> vector <span class="hl opt">)</span>
+    applyAction <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> applyAction <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">decrementTimer</span><span class="hl opt">(</span> ghostState<span class="hl opt">):</span>
+        timer <span class="hl opt">=</span> ghostState<span class="hl opt">.</span>scaredTimer
+        <span class="hl kwa">if</span> timer <span class="hl opt">==</span> <span class="hl num">1</span><span class="hl opt">:</span>
+            ghostState<span class="hl opt">.</span>configuration<span class="hl opt">.</span>pos <span class="hl opt">=</span> <span class="hl kwd">nearestPoint</span><span class="hl opt">(</span> ghostState<span class="hl opt">.</span>configuration<span class="hl opt">.</span>pos <span class="hl opt">)</span>
+        ghostState<span class="hl opt">.</span>scaredTimer <span class="hl opt">=</span> <span class="hl kwb">max</span><span class="hl opt">(</span> <span class="hl num">0</span><span class="hl opt">,</span> timer <span class="hl opt">-</span> <span class="hl num">1</span> <span class="hl opt">)</span>
+    decrementTimer <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> decrementTimer <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">checkDeath</span><span class="hl opt">(</span> state<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        pacmanPosition <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()</span>
+        <span class="hl kwa">if</span> agentIndex <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span> <span class="hl slc"># Pacman just moved; Anyone can kill him</span>
+            <span class="hl kwa">for</span> index <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">1</span><span class="hl opt">,</span> <span class="hl kwb">len</span><span class="hl opt">(</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates <span class="hl opt">) ):</span>
+                ghostState <span class="hl opt">=</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>index<span class="hl opt">]</span>
+                ghostPosition <span class="hl opt">=</span> ghostState<span class="hl opt">.</span>configuration<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span>
+                <span class="hl kwa">if</span> GhostRules<span class="hl opt">.</span><span class="hl kwd">canKill</span><span class="hl opt">(</span> pacmanPosition<span class="hl opt">,</span> ghostPosition <span class="hl opt">):</span>
+                    GhostRules<span class="hl opt">.</span><span class="hl kwd">collide</span><span class="hl opt">(</span> state<span class="hl opt">,</span> ghostState<span class="hl opt">,</span> index <span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            ghostState <span class="hl opt">=</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>agentIndex<span class="hl opt">]</span>
+            ghostPosition <span class="hl opt">=</span> ghostState<span class="hl opt">.</span>configuration<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span>
+            <span class="hl kwa">if</span> GhostRules<span class="hl opt">.</span><span class="hl kwd">canKill</span><span class="hl opt">(</span> pacmanPosition<span class="hl opt">,</span> ghostPosition <span class="hl opt">):</span>
+                GhostRules<span class="hl opt">.</span><span class="hl kwd">collide</span><span class="hl opt">(</span> state<span class="hl opt">,</span> ghostState<span class="hl opt">,</span> agentIndex <span class="hl opt">)</span>
+    checkDeath <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> checkDeath <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">collide</span><span class="hl opt">(</span> state<span class="hl opt">,</span> ghostState<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> ghostState<span class="hl opt">.</span>scaredTimer <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>scoreChange <span class="hl opt">+=</span> <span class="hl num">200</span>
+            GhostRules<span class="hl opt">.</span><span class="hl kwd">placeGhost</span><span class="hl opt">(</span>state<span class="hl opt">,</span> ghostState<span class="hl opt">)</span>
+            ghostState<span class="hl opt">.</span>scaredTimer <span class="hl opt">=</span> <span class="hl num">0</span>
+            <span class="hl slc"># Added for first-person</span>
+            state<span class="hl opt">.</span>data<span class="hl opt">.</span>_eaten<span class="hl opt">[</span>agentIndex<span class="hl opt">] =</span> <span class="hl kwa">True</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">if not</span> state<span class="hl opt">.</span>data<span class="hl opt">.</span>_win<span class="hl opt">:</span>
+                state<span class="hl opt">.</span>data<span class="hl opt">.</span>scoreChange <span class="hl opt">-=</span> <span class="hl num">500</span>
+                state<span class="hl opt">.</span>data<span class="hl opt">.</span>_lose <span class="hl opt">=</span> <span class="hl kwa">True</span>
+    collide <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> collide <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">canKill</span><span class="hl opt">(</span> pacmanPosition<span class="hl opt">,</span> ghostPosition <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl kwd">manhattanDistance</span><span class="hl opt">(</span> ghostPosition<span class="hl opt">,</span> pacmanPosition <span class="hl opt">) &lt;=</span> COLLISION_TOLERANCE
+    canKill <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> canKill <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">placeGhost</span><span class="hl opt">(</span>state<span class="hl opt">,</span> ghostState<span class="hl opt">):</span>
+        ghostState<span class="hl opt">.</span>configuration <span class="hl opt">=</span> ghostState<span class="hl opt">.</span>start
+    placeGhost <span class="hl opt">=</span> <span class="hl kwb">staticmethod</span><span class="hl opt">(</span> placeGhost <span class="hl opt">)</span>
+
+<span class="hl slc">#############################</span>
+<span class="hl slc"># FRAMEWORK TO START A GAME #</span>
+<span class="hl slc">#############################</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl kwb">str</span><span class="hl opt">):</span>
+    <span class="hl kwa">return</span> <span class="hl kwb">str</span> <span class="hl opt">+</span> <span class="hl str">' [Default: %default]'</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">parseAgentArgs</span><span class="hl opt">(</span><span class="hl kwb">str</span><span class="hl opt">):</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">str</span> <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">return</span> <span class="hl opt">{}</span>
+    pieces <span class="hl opt">=</span> <span class="hl kwb">str</span><span class="hl opt">.</span><span class="hl kwd">split</span><span class="hl opt">(</span><span class="hl str">','</span><span class="hl opt">)</span>
+    opts <span class="hl opt">= {}</span>
+    <span class="hl kwa">for</span> p <span class="hl kwa">in</span> pieces<span class="hl opt">:</span>
+        <span class="hl kwa">if</span> <span class="hl str">'='</span> <span class="hl kwa">in</span> p<span class="hl opt">:</span>
+            key<span class="hl opt">,</span> val <span class="hl opt">=</span> p<span class="hl opt">.</span><span class="hl kwd">split</span><span class="hl opt">(</span><span class="hl str">'='</span><span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            key<span class="hl opt">,</span>val <span class="hl opt">=</span> p<span class="hl opt">,</span> <span class="hl num">1</span>
+        opts<span class="hl opt">[</span>key<span class="hl opt">] =</span> val
+    <span class="hl kwa">return</span> opts
+
+<span class="hl kwa">def</span> <span class="hl kwd">readCommand</span><span class="hl opt">(</span> argv <span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Processes the command used to run pacman from the command line.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">from</span> optparse <span class="hl kwa">import</span> OptionParser
+    usageStr <span class="hl opt">=</span> <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    USAGE:      python pacman.py &lt;options&gt;</span>
+<span class="hl str">    EXAMPLES:   (1) python pacman.py</span>
+<span class="hl str">                    - starts an interactive game</span>
+<span class="hl str">                (2) python pacman.py --layout smallClassic --zoom 2</span>
+<span class="hl str">                OR  python pacman.py -l smallClassic -z 2</span>
+<span class="hl str">                    - starts an interactive game on a smaller board, zoomed in</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    parser <span class="hl opt">=</span> <span class="hl kwd">OptionParser</span><span class="hl opt">(</span>usageStr<span class="hl opt">)</span>
+
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-n'</span><span class="hl opt">,</span> <span class="hl str">'--numGames'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'numGames'</span><span class="hl opt">,</span> <span class="hl kwb">type</span><span class="hl opt">=</span><span class="hl str">'int'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'the number of GAMES to play'</span><span class="hl opt">),</span> metavar<span class="hl opt">=</span><span class="hl str">'GAMES'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl num">1</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-l'</span><span class="hl opt">,</span> <span class="hl str">'--layout'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'layout'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'the LAYOUT_FILE from which to load the map layout'</span><span class="hl opt">),</span>
+                      metavar<span class="hl opt">=</span><span class="hl str">'LAYOUT_FILE'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl str">'mediumClassic'</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-p'</span><span class="hl opt">,</span> <span class="hl str">'--pacman'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'pacman'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'the agent TYPE in the pacmanAgents module to use'</span><span class="hl opt">),</span>
+                      metavar<span class="hl opt">=</span><span class="hl str">'TYPE'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl str">'KeyboardAgent'</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-t'</span><span class="hl opt">,</span> <span class="hl str">'--textGraphics'</span><span class="hl opt">,</span> action<span class="hl opt">=</span><span class="hl str">'store_true'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'textGraphics'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'Display output as text only'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-q'</span><span class="hl opt">,</span> <span class="hl str">'--quietTextGraphics'</span><span class="hl opt">,</span> action<span class="hl opt">=</span><span class="hl str">'store_true'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'quietGraphics'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'Generate minimal output and no graphics'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-g'</span><span class="hl opt">,</span> <span class="hl str">'--ghosts'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'ghost'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'the ghost agent TYPE in the ghostAgents module to use'</span><span class="hl opt">),</span>
+                      metavar <span class="hl opt">=</span> <span class="hl str">'TYPE'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl str">'RandomGhost'</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-k'</span><span class="hl opt">,</span> <span class="hl str">'--numghosts'</span><span class="hl opt">,</span> <span class="hl kwb">type</span><span class="hl opt">=</span><span class="hl str">'int'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'numGhosts'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'The maximum number of ghosts to use'</span><span class="hl opt">),</span> default<span class="hl opt">=</span><span class="hl num">4</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-z'</span><span class="hl opt">,</span> <span class="hl str">'--zoom'</span><span class="hl opt">,</span> <span class="hl kwb">type</span><span class="hl opt">=</span><span class="hl str">'float'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'zoom'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'Zoom the size of the graphics window'</span><span class="hl opt">),</span> default<span class="hl opt">=</span><span class="hl num">1.0</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-f'</span><span class="hl opt">,</span> <span class="hl str">'--fixRandomSeed'</span><span class="hl opt">,</span> action<span class="hl opt">=</span><span class="hl str">'store_true'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'fixRandomSeed'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'Fixes the random seed to always play the same game'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-r'</span><span class="hl opt">,</span> <span class="hl str">'--recordActions'</span><span class="hl opt">,</span> action<span class="hl opt">=</span><span class="hl str">'store_true'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'record'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'Writes game histories to a file (named by the time they were played)'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'--replay'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'gameToReplay'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'A recorded game file (pickle) to replay'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-a'</span><span class="hl opt">,</span><span class="hl str">'--agentArgs'</span><span class="hl opt">,</span>dest<span class="hl opt">=</span><span class="hl str">'agentArgs'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'Comma separated values sent to agent. e.g. &quot;opt1=val1,opt2,opt3=val3&quot;'</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-x'</span><span class="hl opt">,</span> <span class="hl str">'--numTraining'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'numTraining'</span><span class="hl opt">,</span> <span class="hl kwb">type</span><span class="hl opt">=</span><span class="hl str">'int'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'How many episodes are training (suppresses output)'</span><span class="hl opt">),</span> default<span class="hl opt">=</span><span class="hl num">0</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'--frameTime'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'frameTime'</span><span class="hl opt">,</span> <span class="hl kwb">type</span><span class="hl opt">=</span><span class="hl str">'float'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'Time to delay between frames; &lt;0 means keyboard'</span><span class="hl opt">),</span> default<span class="hl opt">=</span><span class="hl num">0.1</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'-c'</span><span class="hl opt">,</span> <span class="hl str">'--catchExceptions'</span><span class="hl opt">,</span> action<span class="hl opt">=</span><span class="hl str">'store_true'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'catchExceptions'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl str">'Turns on exception handling and timeouts during games'</span><span class="hl opt">,</span> default<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+    parser<span class="hl opt">.</span><span class="hl kwd">add_option</span><span class="hl opt">(</span><span class="hl str">'--timeout'</span><span class="hl opt">,</span> dest<span class="hl opt">=</span><span class="hl str">'timeout'</span><span class="hl opt">,</span> <span class="hl kwb">type</span><span class="hl opt">=</span><span class="hl str">'int'</span><span class="hl opt">,</span>
+                      <span class="hl kwb">help</span><span class="hl opt">=</span><span class="hl kwd">default</span><span class="hl opt">(</span><span class="hl str">'Maximum length of time an agent can spend computing in a single game'</span><span class="hl opt">),</span> default<span class="hl opt">=</span><span class="hl num">30</span><span class="hl opt">)</span>
+
+    options<span class="hl opt">,</span> otherjunk <span class="hl opt">=</span> parser<span class="hl opt">.</span><span class="hl kwd">parse_args</span><span class="hl opt">(</span>argv<span class="hl opt">)</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>otherjunk<span class="hl opt">) !=</span> <span class="hl num">0</span><span class="hl opt">:</span>
+        <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">'Command line input not understood: '</span> <span class="hl opt">+</span> <span class="hl kwb">str</span><span class="hl opt">(</span>otherjunk<span class="hl opt">))</span>
+    args <span class="hl opt">=</span> <span class="hl kwb">dict</span><span class="hl opt">()</span>
+
+    <span class="hl slc"># Fix the random seed</span>
+    <span class="hl kwa">if</span> options<span class="hl opt">.</span>fixRandomSeed<span class="hl opt">:</span> random<span class="hl opt">.</span><span class="hl kwd">seed</span><span class="hl opt">(</span><span class="hl str">'cs188'</span><span class="hl opt">)</span>
+
+    <span class="hl slc"># Choose a layout</span>
+    args<span class="hl opt">[</span><span class="hl str">'layout'</span><span class="hl opt">] =</span> layout<span class="hl opt">.</span><span class="hl kwd">getLayout</span><span class="hl opt">(</span> options<span class="hl opt">.</span>layout <span class="hl opt">)</span>
+    <span class="hl kwa">if</span> args<span class="hl opt">[</span><span class="hl str">'layout'</span><span class="hl opt">] ==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">&quot;The layout &quot;</span> <span class="hl opt">+</span> options<span class="hl opt">.</span>layout <span class="hl opt">+</span> <span class="hl str">&quot; cannot be found&quot;</span><span class="hl opt">)</span>
+
+    <span class="hl slc"># Choose a Pacman agent</span>
+    noKeyboard <span class="hl opt">=</span> options<span class="hl opt">.</span>gameToReplay <span class="hl opt">==</span> <span class="hl kwa">None and</span> <span class="hl opt">(</span>options<span class="hl opt">.</span>textGraphics <span class="hl kwa">or</span> options<span class="hl opt">.</span>quietGraphics<span class="hl opt">)</span>
+    pacmanType <span class="hl opt">=</span> <span class="hl kwd">loadAgent</span><span class="hl opt">(</span>options<span class="hl opt">.</span>pacman<span class="hl opt">,</span> noKeyboard<span class="hl opt">)</span>
+    agentOpts <span class="hl opt">=</span> <span class="hl kwd">parseAgentArgs</span><span class="hl opt">(</span>options<span class="hl opt">.</span>agentArgs<span class="hl opt">)</span>
+    <span class="hl kwa">if</span> options<span class="hl opt">.</span>numTraining <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+        args<span class="hl opt">[</span><span class="hl str">'numTraining'</span><span class="hl opt">] =</span> options<span class="hl opt">.</span>numTraining
+        <span class="hl kwa">if</span> <span class="hl str">'numTraining'</span> <span class="hl kwa">not in</span> agentOpts<span class="hl opt">:</span> agentOpts<span class="hl opt">[</span><span class="hl str">'numTraining'</span><span class="hl opt">] =</span> options<span class="hl opt">.</span>numTraining
+    pacman <span class="hl opt">=</span> <span class="hl kwd">pacmanType</span><span class="hl opt">(**</span>agentOpts<span class="hl opt">)</span> <span class="hl slc"># Instantiate Pacman with agentArgs</span>
+    args<span class="hl opt">[</span><span class="hl str">'pacman'</span><span class="hl opt">] =</span> pacman
+
+    <span class="hl slc"># Don't display training games</span>
+    <span class="hl kwa">if</span> <span class="hl str">'numTrain'</span> <span class="hl kwa">in</span> agentOpts<span class="hl opt">:</span>
+        options<span class="hl opt">.</span>numQuiet <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>agentOpts<span class="hl opt">[</span><span class="hl str">'numTrain'</span><span class="hl opt">])</span>
+        options<span class="hl opt">.</span>numIgnore <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>agentOpts<span class="hl opt">[</span><span class="hl str">'numTrain'</span><span class="hl opt">])</span>
+
+    <span class="hl slc"># Choose a ghost agent</span>
+    ghostType <span class="hl opt">=</span> <span class="hl kwd">loadAgent</span><span class="hl opt">(</span>options<span class="hl opt">.</span>ghost<span class="hl opt">,</span> noKeyboard<span class="hl opt">)</span>
+    args<span class="hl opt">[</span><span class="hl str">'ghosts'</span><span class="hl opt">] = [</span><span class="hl kwd">ghostType</span><span class="hl opt">(</span> i<span class="hl opt">+</span><span class="hl num">1</span> <span class="hl opt">)</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> options<span class="hl opt">.</span>numGhosts <span class="hl opt">)]</span>
+
+    <span class="hl slc"># Choose a display format</span>
+    <span class="hl kwa">if</span> options<span class="hl opt">.</span>quietGraphics<span class="hl opt">:</span>
+        <span class="hl kwa">import</span> textDisplay
+        args<span class="hl opt">[</span><span class="hl str">'display'</span><span class="hl opt">] =</span> textDisplay<span class="hl opt">.</span><span class="hl kwd">NullGraphics</span><span class="hl opt">()</span>
+    <span class="hl kwa">elif</span> options<span class="hl opt">.</span>textGraphics<span class="hl opt">:</span>
+        <span class="hl kwa">import</span> textDisplay
+        textDisplay<span class="hl opt">.</span>SLEEP_TIME <span class="hl opt">=</span> options<span class="hl opt">.</span>frameTime
+        args<span class="hl opt">[</span><span class="hl str">'display'</span><span class="hl opt">] =</span> textDisplay<span class="hl opt">.</span><span class="hl kwd">PacmanGraphics</span><span class="hl opt">()</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        <span class="hl kwa">import</span> graphicsDisplay
+        args<span class="hl opt">[</span><span class="hl str">'display'</span><span class="hl opt">] =</span> graphicsDisplay<span class="hl opt">.</span><span class="hl kwd">PacmanGraphics</span><span class="hl opt">(</span>options<span class="hl opt">.</span>zoom<span class="hl opt">,</span> frameTime <span class="hl opt">=</span> options<span class="hl opt">.</span>frameTime<span class="hl opt">)</span>
+    args<span class="hl opt">[</span><span class="hl str">'numGames'</span><span class="hl opt">] =</span> options<span class="hl opt">.</span>numGames
+    args<span class="hl opt">[</span><span class="hl str">'record'</span><span class="hl opt">] =</span> options<span class="hl opt">.</span>record
+    args<span class="hl opt">[</span><span class="hl str">'catchExceptions'</span><span class="hl opt">] =</span> options<span class="hl opt">.</span>catchExceptions
+    args<span class="hl opt">[</span><span class="hl str">'timeout'</span><span class="hl opt">] =</span> options<span class="hl opt">.</span>timeout
+
+    <span class="hl slc"># Special case: recorded games don't use the runGames method or args structure</span>
+    <span class="hl kwa">if</span> options<span class="hl opt">.</span>gameToReplay <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+        <span class="hl kwa">print</span> <span class="hl str">'Replaying recorded game %s.'</span> <span class="hl opt">%</span> options<span class="hl opt">.</span>gameToReplay
+        <span class="hl kwa">import</span> cPickle
+        f <span class="hl opt">=</span> <span class="hl kwb">open</span><span class="hl opt">(</span>options<span class="hl opt">.</span>gameToReplay<span class="hl opt">)</span>
+        <span class="hl kwa">try</span><span class="hl opt">:</span> recorded <span class="hl opt">=</span> cPickle<span class="hl opt">.</span><span class="hl kwd">load</span><span class="hl opt">(</span>f<span class="hl opt">)</span>
+        <span class="hl kwa">finally</span><span class="hl opt">:</span> f<span class="hl opt">.</span><span class="hl kwd">close</span><span class="hl opt">()</span>
+        recorded<span class="hl opt">[</span><span class="hl str">'display'</span><span class="hl opt">] =</span> args<span class="hl opt">[</span><span class="hl str">'display'</span><span class="hl opt">]</span>
+        <span class="hl kwd">replayGame</span><span class="hl opt">(**</span>recorded<span class="hl opt">)</span>
+        sys<span class="hl opt">.</span><span class="hl kwd">exit</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">)</span>
+
+    <span class="hl kwa">return</span> args
+
+<span class="hl kwa">def</span> <span class="hl kwd">loadAgent</span><span class="hl opt">(</span>pacman<span class="hl opt">,</span> nographics<span class="hl opt">):</span>
+    <span class="hl slc"># Looks through all pythonPath Directories for the right module,</span>
+    pythonPathStr <span class="hl opt">=</span> os<span class="hl opt">.</span>path<span class="hl opt">.</span><span class="hl kwd">expandvars</span><span class="hl opt">(</span><span class="hl str">&quot;$PYTHONPATH&quot;</span><span class="hl opt">)</span>
+    <span class="hl kwa">if</span> pythonPathStr<span class="hl opt">.</span><span class="hl kwd">find</span><span class="hl opt">(</span><span class="hl str">';'</span><span class="hl opt">) == -</span><span class="hl num">1</span><span class="hl opt">:</span>
+        pythonPathDirs <span class="hl opt">=</span> pythonPathStr<span class="hl opt">.</span><span class="hl kwd">split</span><span class="hl opt">(</span><span class="hl str">':'</span><span class="hl opt">)</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        pythonPathDirs <span class="hl opt">=</span> pythonPathStr<span class="hl opt">.</span><span class="hl kwd">split</span><span class="hl opt">(</span><span class="hl str">';'</span><span class="hl opt">)</span>
+    pythonPathDirs<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl str">'.'</span><span class="hl opt">)</span>
+
+    <span class="hl kwa">for</span> moduleDir <span class="hl kwa">in</span> pythonPathDirs<span class="hl opt">:</span>
+        <span class="hl kwa">if not</span> os<span class="hl opt">.</span>path<span class="hl opt">.</span><span class="hl kwd">isdir</span><span class="hl opt">(</span>moduleDir<span class="hl opt">):</span> <span class="hl kwa">continue</span>
+        moduleNames <span class="hl opt">= [</span>f <span class="hl kwa">for</span> f <span class="hl kwa">in</span> os<span class="hl opt">.</span><span class="hl kwd">listdir</span><span class="hl opt">(</span>moduleDir<span class="hl opt">)</span> <span class="hl kwa">if</span> f<span class="hl opt">.</span><span class="hl kwd">endswith</span><span class="hl opt">(</span><span class="hl str">'gents.py'</span><span class="hl opt">)]</span>
+        <span class="hl kwa">for</span> modulename <span class="hl kwa">in</span> moduleNames<span class="hl opt">:</span>
+            <span class="hl kwa">try</span><span class="hl opt">:</span>
+                module <span class="hl opt">=</span> <span class="hl kwb">__import__</span><span class="hl opt">(</span>modulename<span class="hl opt">[:-</span><span class="hl num">3</span><span class="hl opt">])</span>
+            <span class="hl kwa">except</span> <span class="hl kwc">ImportError</span><span class="hl opt">:</span>
+                <span class="hl kwa">continue</span>
+            <span class="hl kwa">if</span> pacman <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>module<span class="hl opt">):</span>
+                <span class="hl kwa">if</span> nographics <span class="hl kwa">and</span> modulename <span class="hl opt">==</span> <span class="hl str">'keyboardAgents.py'</span><span class="hl opt">:</span>
+                    <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">'Using the keyboard requires graphics (not text display)'</span><span class="hl opt">)</span>
+                <span class="hl kwa">return</span> <span class="hl kwb">getattr</span><span class="hl opt">(</span>module<span class="hl opt">,</span> pacman<span class="hl opt">)</span>
+    <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">(</span><span class="hl str">'The agent '</span> <span class="hl opt">+</span> pacman <span class="hl opt">+</span> <span class="hl str">' is not specified in any *Agents.py.'</span><span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">replayGame</span><span class="hl opt">(</span> layout<span class="hl opt">,</span> actions<span class="hl opt">,</span> display <span class="hl opt">):</span>
+    <span class="hl kwa">import</span> pacmanAgents<span class="hl opt">,</span> ghostAgents
+    rules <span class="hl opt">=</span> <span class="hl kwd">ClassicGameRules</span><span class="hl opt">()</span>
+    agents <span class="hl opt">= [</span>pacmanAgents<span class="hl opt">.</span><span class="hl kwd">GreedyAgent</span><span class="hl opt">()] + [</span>ghostAgents<span class="hl opt">.</span><span class="hl kwd">RandomGhost</span><span class="hl opt">(</span>i<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">)</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>layout<span class="hl opt">.</span><span class="hl kwd">getNumGhosts</span><span class="hl opt">())]</span>
+    game <span class="hl opt">=</span> rules<span class="hl opt">.</span><span class="hl kwd">newGame</span><span class="hl opt">(</span> layout<span class="hl opt">,</span> agents<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> agents<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">:],</span> display <span class="hl opt">)</span>
+    state <span class="hl opt">=</span> game<span class="hl opt">.</span>state
+    display<span class="hl opt">.</span><span class="hl kwd">initialize</span><span class="hl opt">(</span>state<span class="hl opt">.</span>data<span class="hl opt">)</span>
+
+    <span class="hl kwa">for</span> action <span class="hl kwa">in</span> actions<span class="hl opt">:</span>
+            <span class="hl slc"># Execute the action</span>
+        state <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">generateSuccessor</span><span class="hl opt">( *</span>action <span class="hl opt">)</span>
+        <span class="hl slc"># Change the display</span>
+        display<span class="hl opt">.</span><span class="hl kwd">update</span><span class="hl opt">(</span> state<span class="hl opt">.</span>data <span class="hl opt">)</span>
+        <span class="hl slc"># Allow for game specific conditions (winning, losing, etc.)</span>
+        rules<span class="hl opt">.</span><span class="hl kwd">process</span><span class="hl opt">(</span>state<span class="hl opt">,</span> game<span class="hl opt">)</span>
+
+    display<span class="hl opt">.</span><span class="hl kwd">finish</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">runGames</span><span class="hl opt">(</span> layout<span class="hl opt">,</span> pacman<span class="hl opt">,</span> ghosts<span class="hl opt">,</span> display<span class="hl opt">,</span> numGames<span class="hl opt">,</span> record<span class="hl opt">,</span> numTraining <span class="hl opt">=</span> <span class="hl num">0</span><span class="hl opt">,</span> catchExceptions<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">,</span> timeout<span class="hl opt">=</span><span class="hl num">30</span> <span class="hl opt">):</span>
+    <span class="hl kwa">import</span> __main__
+    __main__<span class="hl opt">.</span>__dict__<span class="hl opt">[</span><span class="hl str">'_display'</span><span class="hl opt">] =</span> display
+
+    rules <span class="hl opt">=</span> <span class="hl kwd">ClassicGameRules</span><span class="hl opt">(</span>timeout<span class="hl opt">)</span>
+    games <span class="hl opt">= []</span>
+
+    <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> numGames <span class="hl opt">):</span>
+        beQuiet <span class="hl opt">=</span> i <span class="hl opt">&lt;</span> numTraining
+        <span class="hl kwa">if</span> beQuiet<span class="hl opt">:</span>
+                <span class="hl slc"># Suppress output and graphics</span>
+            <span class="hl kwa">import</span> textDisplay
+            gameDisplay <span class="hl opt">=</span> textDisplay<span class="hl opt">.</span><span class="hl kwd">NullGraphics</span><span class="hl opt">()</span>
+            rules<span class="hl opt">.</span>quiet <span class="hl opt">=</span> <span class="hl kwa">True</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            gameDisplay <span class="hl opt">=</span> display
+            rules<span class="hl opt">.</span>quiet <span class="hl opt">=</span> <span class="hl kwa">False</span>
+        game <span class="hl opt">=</span> rules<span class="hl opt">.</span><span class="hl kwd">newGame</span><span class="hl opt">(</span> layout<span class="hl opt">,</span> pacman<span class="hl opt">,</span> ghosts<span class="hl opt">,</span> gameDisplay<span class="hl opt">,</span> beQuiet<span class="hl opt">,</span> catchExceptions<span class="hl opt">)</span>
+        game<span class="hl opt">.</span><span class="hl kwd">run</span><span class="hl opt">()</span>
+        <span class="hl kwa">if not</span> beQuiet<span class="hl opt">:</span> games<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>game<span class="hl opt">)</span>
+
+        <span class="hl kwa">if</span> record<span class="hl opt">:</span>
+            <span class="hl kwa">import</span> time<span class="hl opt">,</span> cPickle
+            fname <span class="hl opt">= (</span><span class="hl str">'recorded-game-%d'</span> <span class="hl opt">% (</span>i <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">)) +</span>  <span class="hl str">'-'</span><span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">([</span><span class="hl kwb">str</span><span class="hl opt">(</span>t<span class="hl opt">)</span> <span class="hl kwa">for</span> t <span class="hl kwa">in</span> time<span class="hl opt">.</span><span class="hl kwd">localtime</span><span class="hl opt">()[</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">6</span><span class="hl opt">]])</span>
+            f <span class="hl opt">=</span> <span class="hl kwb">file</span><span class="hl opt">(</span>fname<span class="hl opt">,</span> <span class="hl str">'w'</span><span class="hl opt">)</span>
+            components <span class="hl opt">= {</span><span class="hl str">'layout'</span><span class="hl opt">:</span> layout<span class="hl opt">,</span> <span class="hl str">'actions'</span><span class="hl opt">:</span> game<span class="hl opt">.</span>moveHistory<span class="hl opt">}</span>
+            cPickle<span class="hl opt">.</span><span class="hl kwd">dump</span><span class="hl opt">(</span>components<span class="hl opt">,</span> f<span class="hl opt">)</span>
+            f<span class="hl opt">.</span><span class="hl kwd">close</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">if</span> <span class="hl opt">(</span>numGames<span class="hl opt">-</span>numTraining<span class="hl opt">) &gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+        scores <span class="hl opt">= [</span>game<span class="hl opt">.</span>state<span class="hl opt">.</span><span class="hl kwd">getScore</span><span class="hl opt">()</span> <span class="hl kwa">for</span> game <span class="hl kwa">in</span> games<span class="hl opt">]</span>
+        wins <span class="hl opt">= [</span>game<span class="hl opt">.</span>state<span class="hl opt">.</span><span class="hl kwd">isWin</span><span class="hl opt">()</span> <span class="hl kwa">for</span> game <span class="hl kwa">in</span> games<span class="hl opt">]</span>
+        winRate <span class="hl opt">=</span> wins<span class="hl opt">.</span><span class="hl kwd">count</span><span class="hl opt">(</span><span class="hl kwa">True</span><span class="hl opt">)/</span> <span class="hl kwb">float</span><span class="hl opt">(</span><span class="hl kwb">len</span><span class="hl opt">(</span>wins<span class="hl opt">))</span>
+        <span class="hl kwa">print</span> <span class="hl str">'Average Score:'</span><span class="hl opt">,</span> <span class="hl kwb">sum</span><span class="hl opt">(</span>scores<span class="hl opt">) /</span> <span class="hl kwb">float</span><span class="hl opt">(</span><span class="hl kwb">len</span><span class="hl opt">(</span>scores<span class="hl opt">))</span>
+        <span class="hl kwa">print</span> <span class="hl str">'Scores:       '</span><span class="hl opt">,</span> <span class="hl str">', '</span><span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">([</span><span class="hl kwb">str</span><span class="hl opt">(</span>score<span class="hl opt">)</span> <span class="hl kwa">for</span> score <span class="hl kwa">in</span> scores<span class="hl opt">])</span>
+        <span class="hl kwa">print</span> <span class="hl str">'Win Rate:      %d/%d (%.2f)'</span> <span class="hl opt">% (</span>wins<span class="hl opt">.</span><span class="hl kwd">count</span><span class="hl opt">(</span><span class="hl kwa">True</span><span class="hl opt">),</span> <span class="hl kwb">len</span><span class="hl opt">(</span>wins<span class="hl opt">),</span> winRate<span class="hl opt">)</span>
+        <span class="hl kwa">print</span> <span class="hl str">'Record:       '</span><span class="hl opt">,</span> <span class="hl str">', '</span><span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">([ [</span><span class="hl str">'Loss'</span><span class="hl opt">,</span> <span class="hl str">'Win'</span><span class="hl opt">][</span><span class="hl kwb">int</span><span class="hl opt">(</span>w<span class="hl opt">)]</span> <span class="hl kwa">for</span> w <span class="hl kwa">in</span> wins<span class="hl opt">])</span>
+
+    <span class="hl kwa">return</span> games
+
+<span class="hl kwa">if</span> __name__ <span class="hl opt">==</span> <span class="hl str">'__main__'</span><span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    The main function called when pacman.py is run</span>
+<span class="hl str">    from the command line:</span>
+<span class="hl str"></span>
+<span class="hl str">    &gt; python pacman.py</span>
+<span class="hl str"></span>
+<span class="hl str">    See the usage string for more details.</span>
+<span class="hl str"></span>
+<span class="hl str">    &gt; python pacman.py --help</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    args <span class="hl opt">=</span> <span class="hl kwd">readCommand</span><span class="hl opt">(</span> sys<span class="hl opt">.</span>argv<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">:] )</span> <span class="hl slc"># Get game components based on input</span>
+    <span class="hl kwd">runGames</span><span class="hl opt">( **</span>args <span class="hl opt">)</span>
+
+    <span class="hl slc"># import cProfile</span>
+    <span class="hl slc"># cProfile.run(&quot;runGames( **args )&quot;)</span>
+    <span class="hl kwa">pass</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

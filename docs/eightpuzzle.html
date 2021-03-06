@@ -1,0 +1,289 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>eightpuzzle.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># eightpuzzle.py</span>
+<span class="hl slc"># --------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">import</span> search
+<span class="hl kwa">import</span> random
+
+<span class="hl slc"># Module Classes</span>
+
+<span class="hl kwa">class</span> EightPuzzleState<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    The Eight Puzzle is described in the course textbook on</span>
+<span class="hl str">    page 64.</span>
+<span class="hl str"></span>
+<span class="hl str">    This class defines the mechanics of the puzzle itself.  The</span>
+<span class="hl str">    task of recasting this puzzle as a search problem is left to</span>
+<span class="hl str">    the EightPuzzleSearchProblem class.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> numbers <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Constructs a new eight puzzle from an ordering of numbers.</span>
+<span class="hl str"></span>
+<span class="hl str">        numbers: a list of integers from 0 to 8 representing an</span>
+<span class="hl str">          instance of the eight puzzle.  0 represents the blank</span>
+<span class="hl str">          space.  Thus, the list</span>
+<span class="hl str"></span>
+<span class="hl str">            [1, 0, 2, 3, 4, 5, 6, 7, 8]</span>
+<span class="hl str"></span>
+<span class="hl str">          represents the eight puzzle:</span>
+<span class="hl str">            -------------</span>
+<span class="hl str">            | 1 |   | 2 |</span>
+<span class="hl str">            -------------</span>
+<span class="hl str">            | 3 | 4 | 5 |</span>
+<span class="hl str">            -------------</span>
+<span class="hl str">            | 6 | 7 | 8 |</span>
+<span class="hl str">            ------------</span>
+<span class="hl str"></span>
+<span class="hl str">        The configuration of the puzzle is stored in a 2-dimensional</span>
+<span class="hl str">        list (a list of lists) 'cells'.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        self<span class="hl opt">.</span>cells <span class="hl opt">= []</span>
+        numbers <span class="hl opt">=</span> numbers<span class="hl opt">[:]</span> <span class="hl slc"># Make a copy so as not to cause side-effects.</span>
+        numbers<span class="hl opt">.</span><span class="hl kwd">reverse</span><span class="hl opt">()</span>
+        <span class="hl kwa">for</span> row <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">3</span> <span class="hl opt">):</span>
+            self<span class="hl opt">.</span>cells<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( [] )</span>
+            <span class="hl kwa">for</span> col <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">3</span> <span class="hl opt">):</span>
+                self<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">].</span><span class="hl kwd">append</span><span class="hl opt">(</span> numbers<span class="hl opt">.</span><span class="hl kwd">pop</span><span class="hl opt">() )</span>
+                <span class="hl kwa">if</span> self<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">][</span>col<span class="hl opt">] ==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+                    self<span class="hl opt">.</span>blankLocation <span class="hl opt">=</span> row<span class="hl opt">,</span> col
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoal</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Checks to see if the puzzle is in its goal state.</span>
+<span class="hl str"></span>
+<span class="hl str">            -------------</span>
+<span class="hl str">            |   | 1 | 2 |</span>
+<span class="hl str">            -------------</span>
+<span class="hl str">            | 3 | 4 | 5 |</span>
+<span class="hl str">            -------------</span>
+<span class="hl str">            | 6 | 7 | 8 |</span>
+<span class="hl str">            -------------</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; EightPuzzleState([0, 1, 2, 3, 4, 5, 6, 7, 8]).isGoal()</span>
+<span class="hl str">        True</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; EightPuzzleState([1, 0, 2, 3, 4, 5, 6, 7, 8]).isGoal()</span>
+<span class="hl str">        False</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        current <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwa">for</span> row <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">3</span> <span class="hl opt">):</span>
+            <span class="hl kwa">for</span> col <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">3</span> <span class="hl opt">):</span>
+                <span class="hl kwa">if</span> current <span class="hl opt">!=</span> self<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">][</span>col<span class="hl opt">]:</span>
+                    <span class="hl kwa">return False</span>
+                current <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">return True</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">legalMoves</span><span class="hl opt">(</span> self <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Returns a list of legal moves from the current state.</span>
+<span class="hl str"></span>
+<span class="hl str">        Moves consist of moving the blank space up, down, left or right.</span>
+<span class="hl str">        These are encoded as 'up', 'down', 'left' and 'right' respectively.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; EightPuzzleState([0, 1, 2, 3, 4, 5, 6, 7, 8]).legalMoves()</span>
+<span class="hl str">        ['down', 'right']</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        moves <span class="hl opt">= []</span>
+        row<span class="hl opt">,</span> col <span class="hl opt">=</span> self<span class="hl opt">.</span>blankLocation
+        <span class="hl kwa">if</span><span class="hl opt">(</span>row <span class="hl opt">!=</span> <span class="hl num">0</span><span class="hl opt">):</span>
+            moves<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl str">'up'</span><span class="hl opt">)</span>
+        <span class="hl kwa">if</span><span class="hl opt">(</span>row <span class="hl opt">!=</span> <span class="hl num">2</span><span class="hl opt">):</span>
+            moves<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl str">'down'</span><span class="hl opt">)</span>
+        <span class="hl kwa">if</span><span class="hl opt">(</span>col <span class="hl opt">!=</span> <span class="hl num">0</span><span class="hl opt">):</span>
+            moves<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl str">'left'</span><span class="hl opt">)</span>
+        <span class="hl kwa">if</span><span class="hl opt">(</span>col <span class="hl opt">!=</span> <span class="hl num">2</span><span class="hl opt">):</span>
+            moves<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl str">'right'</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> moves
+
+    <span class="hl kwa">def</span> <span class="hl kwd">result</span><span class="hl opt">(</span>self<span class="hl opt">,</span> move<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Returns a new eightPuzzle with the current state and blankLocation</span>
+<span class="hl str">        updated based on the provided move.</span>
+<span class="hl str"></span>
+<span class="hl str">        The move should be a string drawn from a list returned by legalMoves.</span>
+<span class="hl str">        Illegal moves will raise an exception, which may be an array bounds</span>
+<span class="hl str">        exception.</span>
+<span class="hl str"></span>
+<span class="hl str">        NOTE: This function *does not* change the current object.  Instead,</span>
+<span class="hl str">        it returns a new object.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        row<span class="hl opt">,</span> col <span class="hl opt">=</span> self<span class="hl opt">.</span>blankLocation
+        <span class="hl kwa">if</span><span class="hl opt">(</span>move <span class="hl opt">==</span> <span class="hl str">'up'</span><span class="hl opt">):</span>
+            newrow <span class="hl opt">=</span> row <span class="hl opt">-</span> <span class="hl num">1</span>
+            newcol <span class="hl opt">=</span> col
+        <span class="hl kwa">elif</span><span class="hl opt">(</span>move <span class="hl opt">==</span> <span class="hl str">'down'</span><span class="hl opt">):</span>
+            newrow <span class="hl opt">=</span> row <span class="hl opt">+</span> <span class="hl num">1</span>
+            newcol <span class="hl opt">=</span> col
+        <span class="hl kwa">elif</span><span class="hl opt">(</span>move <span class="hl opt">==</span> <span class="hl str">'left'</span><span class="hl opt">):</span>
+            newrow <span class="hl opt">=</span> row
+            newcol <span class="hl opt">=</span> col <span class="hl opt">-</span> <span class="hl num">1</span>
+        <span class="hl kwa">elif</span><span class="hl opt">(</span>move <span class="hl opt">==</span> <span class="hl str">'right'</span><span class="hl opt">):</span>
+            newrow <span class="hl opt">=</span> row
+            newcol <span class="hl opt">=</span> col <span class="hl opt">+</span> <span class="hl num">1</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">raise</span> <span class="hl str">&quot;Illegal Move&quot;</span>
+
+        <span class="hl slc"># Create a copy of the current eightPuzzle</span>
+        newPuzzle <span class="hl opt">=</span> <span class="hl kwd">EightPuzzleState</span><span class="hl opt">([</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">])</span>
+        newPuzzle<span class="hl opt">.</span>cells <span class="hl opt">= [</span>values<span class="hl opt">[:]</span> <span class="hl kwa">for</span> values <span class="hl kwa">in</span> self<span class="hl opt">.</span>cells<span class="hl opt">]</span>
+        <span class="hl slc"># And update it to reflect the move</span>
+        newPuzzle<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">][</span>col<span class="hl opt">] =</span> self<span class="hl opt">.</span>cells<span class="hl opt">[</span>newrow<span class="hl opt">][</span>newcol<span class="hl opt">]</span>
+        newPuzzle<span class="hl opt">.</span>cells<span class="hl opt">[</span>newrow<span class="hl opt">][</span>newcol<span class="hl opt">] =</span> self<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">][</span>col<span class="hl opt">]</span>
+        newPuzzle<span class="hl opt">.</span>blankLocation <span class="hl opt">=</span> newrow<span class="hl opt">,</span> newcol
+
+        <span class="hl kwa">return</span> newPuzzle
+
+    <span class="hl slc"># Utilities for comparison and display</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__eq__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> other<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">            Overloads '==' such that two eightPuzzles with the same configuration</span>
+<span class="hl str">          are equal.</span>
+<span class="hl str"></span>
+<span class="hl str">          &gt;&gt;&gt; EightPuzzleState([0, 1, 2, 3, 4, 5, 6, 7, 8]) == \</span>
+<span class="hl str">              EightPuzzleState([1, 0, 2, 3, 4, 5, 6, 7, 8]).result('left')</span>
+<span class="hl str">          True</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">for</span> row <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> <span class="hl num">3</span> <span class="hl opt">):</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">] !=</span> other<span class="hl opt">.</span>cells<span class="hl opt">[</span>row<span class="hl opt">]:</span>
+                <span class="hl kwa">return False</span>
+        <span class="hl kwa">return True</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__hash__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">hash</span><span class="hl opt">(</span><span class="hl kwb">str</span><span class="hl opt">(</span>self<span class="hl opt">.</span>cells<span class="hl opt">))</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__getAsciiString</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Returns a display string for the maze</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        lines <span class="hl opt">= []</span>
+        horizontalLine <span class="hl opt">= (</span><span class="hl str">'-'</span> <span class="hl opt">* (</span><span class="hl num">13</span><span class="hl opt">))</span>
+        lines<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>horizontalLine<span class="hl opt">)</span>
+        <span class="hl kwa">for</span> row <span class="hl kwa">in</span> self<span class="hl opt">.</span>cells<span class="hl opt">:</span>
+            rowLine <span class="hl opt">=</span> <span class="hl str">'|'</span>
+            <span class="hl kwa">for</span> col <span class="hl kwa">in</span> row<span class="hl opt">:</span>
+                <span class="hl kwa">if</span> col <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+                    col <span class="hl opt">=</span> <span class="hl str">' '</span>
+                rowLine <span class="hl opt">=</span> rowLine <span class="hl opt">+</span> <span class="hl str">' '</span> <span class="hl opt">+</span> col<span class="hl opt">.</span><span class="hl kwd">__str__</span><span class="hl opt">() +</span> <span class="hl str">' |'</span>
+            lines<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>rowLine<span class="hl opt">)</span>
+            lines<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>horizontalLine<span class="hl opt">)</span>
+        <span class="hl kwa">return</span> <span class="hl str">'</span><span class="hl esc">\n</span><span class="hl str">'</span><span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">(</span>lines<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__str__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span><span class="hl kwd">__getAsciiString</span><span class="hl opt">()</span>
+
+<span class="hl slc"># TODO: Implement The methods in this class</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">EightPuzzleSearchProblem</span><span class="hl opt">(</span>search<span class="hl opt">.</span>SearchProblem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">      Implementation of a SearchProblem for the  Eight Puzzle domain</span>
+<span class="hl str"></span>
+<span class="hl str">      Each state is represented by an instance of an eightPuzzle.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span>puzzle<span class="hl opt">):</span>
+        <span class="hl str">&quot;Creates a new EightPuzzleSearchProblem which stores search information.&quot;</span>
+        self<span class="hl opt">.</span>puzzle <span class="hl opt">=</span> puzzle
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getStartState</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> puzzle
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoalState</span><span class="hl opt">(</span>self<span class="hl opt">,</span>state<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> state<span class="hl opt">.</span><span class="hl kwd">isGoal</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getSuccessors</span><span class="hl opt">(</span>self<span class="hl opt">,</span>state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Returns list of (successor, action, stepCost) pairs where</span>
+<span class="hl str">          each succesor is either left, right, up, or down</span>
+<span class="hl str">          from the original state and the cost is 1.0 for each</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        succ <span class="hl opt">= []</span>
+        <span class="hl kwa">for</span> a <span class="hl kwa">in</span> state<span class="hl opt">.</span><span class="hl kwd">legalMoves</span><span class="hl opt">():</span>
+            succ<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">((</span>state<span class="hl opt">.</span><span class="hl kwd">result</span><span class="hl opt">(</span>a<span class="hl opt">),</span> a<span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">))</span>
+        <span class="hl kwa">return</span> succ
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getCostOfActions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> actions<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">         actions: A list of actions to take</span>
+<span class="hl str"></span>
+<span class="hl str">        This method returns the total cost of a particular sequence of actions.  The sequence must</span>
+<span class="hl str">        be composed of legal moves</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span>actions<span class="hl opt">)</span>
+
+EIGHT_PUZZLE_DATA <span class="hl opt">= [[</span><span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">3</span><span class="hl opt">,</span> <span class="hl num">4</span><span class="hl opt">,</span> <span class="hl num">5</span><span class="hl opt">,</span> <span class="hl num">6</span><span class="hl opt">,</span> <span class="hl num">7</span><span class="hl opt">,</span> <span class="hl num">8</span><span class="hl opt">],</span>
+                     <span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">7</span><span class="hl opt">,</span> <span class="hl num">8</span><span class="hl opt">,</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">3</span><span class="hl opt">,</span> <span class="hl num">4</span><span class="hl opt">,</span> <span class="hl num">5</span><span class="hl opt">,</span> <span class="hl num">6</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">],</span>
+                     <span class="hl opt">[</span><span class="hl num">4</span><span class="hl opt">,</span> <span class="hl num">3</span><span class="hl opt">,</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">7</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">5</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">6</span><span class="hl opt">,</span> <span class="hl num">8</span><span class="hl opt">],</span>
+                     <span class="hl opt">[</span><span class="hl num">5</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">3</span><span class="hl opt">,</span> <span class="hl num">4</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">6</span><span class="hl opt">,</span> <span class="hl num">7</span><span class="hl opt">,</span> <span class="hl num">8</span><span class="hl opt">],</span>
+                     <span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">5</span><span class="hl opt">,</span> <span class="hl num">7</span><span class="hl opt">,</span> <span class="hl num">6</span><span class="hl opt">,</span> <span class="hl num">8</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">4</span><span class="hl opt">,</span> <span class="hl num">3</span><span class="hl opt">],</span>
+                     <span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">3</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">6</span><span class="hl opt">,</span> <span class="hl num">8</span><span class="hl opt">,</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">7</span><span class="hl opt">,</span> <span class="hl num">5</span><span class="hl opt">,</span> <span class="hl num">4</span><span class="hl opt">]]</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">loadEightPuzzle</span><span class="hl opt">(</span>puzzleNumber<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">      puzzleNumber: The number of the eight puzzle to load.</span>
+<span class="hl str"></span>
+<span class="hl str">      Returns an eight puzzle object generated from one of the</span>
+<span class="hl str">      provided puzzles in EIGHT_PUZZLE_DATA.</span>
+<span class="hl str"></span>
+<span class="hl str">      puzzleNumber can range from 0 to 5.</span>
+<span class="hl str"></span>
+<span class="hl str">      &gt;&gt;&gt; print loadEightPuzzle(0)</span>
+<span class="hl str">      -------------</span>
+<span class="hl str">      | 1 |   | 2 |</span>
+<span class="hl str">      -------------</span>
+<span class="hl str">      | 3 | 4 | 5 |</span>
+<span class="hl str">      -------------</span>
+<span class="hl str">      | 6 | 7 | 8 |</span>
+<span class="hl str">      -------------</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">return</span> <span class="hl kwd">EightPuzzleState</span><span class="hl opt">(</span>EIGHT_PUZZLE_DATA<span class="hl opt">[</span>puzzleNumber<span class="hl opt">])</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">createRandomEightPuzzle</span><span class="hl opt">(</span>moves<span class="hl opt">=</span><span class="hl num">100</span><span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">      moves: number of random moves to apply</span>
+<span class="hl str"></span>
+<span class="hl str">      Creates a random eight puzzle by applying</span>
+<span class="hl str">      a series of 'moves' random moves to a solved</span>
+<span class="hl str">      puzzle.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    puzzle <span class="hl opt">=</span> <span class="hl kwd">EightPuzzleState</span><span class="hl opt">([</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">2</span><span class="hl opt">,</span><span class="hl num">3</span><span class="hl opt">,</span><span class="hl num">4</span><span class="hl opt">,</span><span class="hl num">5</span><span class="hl opt">,</span><span class="hl num">6</span><span class="hl opt">,</span><span class="hl num">7</span><span class="hl opt">,</span><span class="hl num">8</span><span class="hl opt">])</span>
+    <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>moves<span class="hl opt">):</span>
+        <span class="hl slc"># Execute a random legal move</span>
+        puzzle <span class="hl opt">=</span> puzzle<span class="hl opt">.</span><span class="hl kwd">result</span><span class="hl opt">(</span>random<span class="hl opt">.</span><span class="hl kwd">sample</span><span class="hl opt">(</span>puzzle<span class="hl opt">.</span><span class="hl kwd">legalMoves</span><span class="hl opt">(),</span> <span class="hl num">1</span><span class="hl opt">)[</span><span class="hl num">0</span><span class="hl opt">])</span>
+    <span class="hl kwa">return</span> puzzle
+
+<span class="hl kwa">if</span> __name__ <span class="hl opt">==</span> <span class="hl str">'__main__'</span><span class="hl opt">:</span>
+    puzzle <span class="hl opt">=</span> <span class="hl kwd">createRandomEightPuzzle</span><span class="hl opt">(</span><span class="hl num">25</span><span class="hl opt">)</span>
+    <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'A random puzzle:'</span><span class="hl opt">)</span>
+    <span class="hl kwa">print</span><span class="hl opt">(</span>puzzle<span class="hl opt">)</span>
+
+    problem <span class="hl opt">=</span> <span class="hl kwd">EightPuzzleSearchProblem</span><span class="hl opt">(</span>puzzle<span class="hl opt">)</span>
+    path <span class="hl opt">=</span> search<span class="hl opt">.</span><span class="hl kwd">breadthFirstSearch</span><span class="hl opt">(</span>problem<span class="hl opt">)</span>
+    <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'BFS found a path of %d moves: %s'</span> <span class="hl opt">% (</span><span class="hl kwb">len</span><span class="hl opt">(</span>path<span class="hl opt">),</span> <span class="hl kwb">str</span><span class="hl opt">(</span>path<span class="hl opt">)))</span>
+    curr <span class="hl opt">=</span> puzzle
+    i <span class="hl opt">=</span> <span class="hl num">1</span>
+    <span class="hl kwa">for</span> a <span class="hl kwa">in</span> path<span class="hl opt">:</span>
+        curr <span class="hl opt">=</span> curr<span class="hl opt">.</span><span class="hl kwd">result</span><span class="hl opt">(</span>a<span class="hl opt">)</span>
+        <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'After %d move%s: %s'</span> <span class="hl opt">% (</span>i<span class="hl opt">, (</span><span class="hl str">&quot;&quot;</span><span class="hl opt">,</span> <span class="hl str">&quot;s&quot;</span><span class="hl opt">)[</span>i<span class="hl opt">&gt;</span><span class="hl num">1</span><span class="hl opt">],</span> a<span class="hl opt">))</span>
+        <span class="hl kwa">print</span><span class="hl opt">(</span>curr<span class="hl opt">)</span>
+
+        <span class="hl kwb">raw_input</span><span class="hl opt">(</span><span class="hl str">&quot;Press return for the next state...&quot;</span><span class="hl opt">)</span>   <span class="hl slc"># wait for key stroke</span>
+        i <span class="hl opt">+=</span> <span class="hl num">1</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

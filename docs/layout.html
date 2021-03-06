@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>layout.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># layout.py</span>
+<span class="hl slc"># ---------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">from</span> util <span class="hl kwa">import</span> manhattanDistance
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Grid
+<span class="hl kwa">import</span> os
+<span class="hl kwa">import</span> random
+
+VISIBILITY_MATRIX_CACHE <span class="hl opt">= {}</span>
+
+<span class="hl kwa">class</span> Layout<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A Layout manages the static information about the game board.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> layoutText<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>width <span class="hl opt">=</span> <span class="hl kwb">len</span><span class="hl opt">(</span>layoutText<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">])</span>
+        self<span class="hl opt">.</span>height<span class="hl opt">=</span> <span class="hl kwb">len</span><span class="hl opt">(</span>layoutText<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>walls <span class="hl opt">=</span> <span class="hl kwd">Grid</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">,</span> self<span class="hl opt">.</span>height<span class="hl opt">,</span> <span class="hl kwa">False</span><span class="hl opt">)</span>
+        self<span class="hl opt">.</span>food <span class="hl opt">=</span> <span class="hl kwd">Grid</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">,</span> self<span class="hl opt">.</span>height<span class="hl opt">,</span> <span class="hl kwa">False</span><span class="hl opt">)</span>
+        self<span class="hl opt">.</span>capsules <span class="hl opt">= []</span>
+        self<span class="hl opt">.</span>agentPositions <span class="hl opt">= []</span>
+        self<span class="hl opt">.</span>numGhosts <span class="hl opt">=</span> <span class="hl num">0</span>
+        self<span class="hl opt">.</span><span class="hl kwd">processLayoutText</span><span class="hl opt">(</span>layoutText<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>layoutText <span class="hl opt">=</span> layoutText
+        <span class="hl slc"># self.initializeVisibilityMatrix()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getNumGhosts</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>numGhosts
+
+    <span class="hl kwa">def</span> <span class="hl kwd">initializeVisibilityMatrix</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">global</span> VISIBILITY_MATRIX_CACHE
+        <span class="hl kwa">if</span> <span class="hl kwb">reduce</span><span class="hl opt">(</span><span class="hl kwb">str</span><span class="hl opt">.</span>__add__<span class="hl opt">,</span> self<span class="hl opt">.</span>layoutText<span class="hl opt">)</span> <span class="hl kwa">not in</span> VISIBILITY_MATRIX_CACHE<span class="hl opt">:</span>
+            <span class="hl kwa">from</span> game <span class="hl kwa">import</span> Directions
+            vecs <span class="hl opt">= [(-</span><span class="hl num">0.5</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">), (</span><span class="hl num">0.5</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">),(</span><span class="hl num">0</span><span class="hl opt">,-</span><span class="hl num">0.5</span><span class="hl opt">),(</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0.5</span><span class="hl opt">)]</span>
+            dirs <span class="hl opt">= [</span>Directions<span class="hl opt">.</span>NORTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>SOUTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>WEST<span class="hl opt">,</span> Directions<span class="hl opt">.</span>EAST<span class="hl opt">]</span>
+            vis <span class="hl opt">=</span> <span class="hl kwd">Grid</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">,</span> self<span class="hl opt">.</span>height<span class="hl opt">, {</span>Directions<span class="hl opt">.</span>NORTH<span class="hl opt">:</span><span class="hl kwb">set</span><span class="hl opt">(),</span> Directions<span class="hl opt">.</span>SOUTH<span class="hl opt">:</span><span class="hl kwb">set</span><span class="hl opt">(),</span> Directions<span class="hl opt">.</span>EAST<span class="hl opt">:</span><span class="hl kwb">set</span><span class="hl opt">(),</span> Directions<span class="hl opt">.</span>WEST<span class="hl opt">:</span><span class="hl kwb">set</span><span class="hl opt">(),</span> Directions<span class="hl opt">.</span>STOP<span class="hl opt">:</span><span class="hl kwb">set</span><span class="hl opt">()})</span>
+            <span class="hl kwa">for</span> x <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">):</span>
+                <span class="hl kwa">for</span> y <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>height<span class="hl opt">):</span>
+                    <span class="hl kwa">if</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">] ==</span> <span class="hl kwa">False</span><span class="hl opt">:</span>
+                        <span class="hl kwa">for</span> vec<span class="hl opt">,</span> direction <span class="hl kwa">in</span> <span class="hl kwb">zip</span><span class="hl opt">(</span>vecs<span class="hl opt">,</span> dirs<span class="hl opt">):</span>
+                            dx<span class="hl opt">,</span> dy <span class="hl opt">=</span> vec
+                            nextx<span class="hl opt">,</span> nexty <span class="hl opt">=</span> x <span class="hl opt">+</span> dx<span class="hl opt">,</span> y <span class="hl opt">+</span> dy
+                            <span class="hl kwa">while</span> <span class="hl opt">(</span>nextx <span class="hl opt">+</span> nexty<span class="hl opt">) !=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>nextx<span class="hl opt">) +</span> <span class="hl kwb">int</span><span class="hl opt">(</span>nexty<span class="hl opt">)</span> <span class="hl kwa">or not</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span><span class="hl kwb">int</span><span class="hl opt">(</span>nextx<span class="hl opt">)][</span><span class="hl kwb">int</span><span class="hl opt">(</span>nexty<span class="hl opt">)] :</span>
+                                vis<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">][</span>direction<span class="hl opt">].</span><span class="hl kwd">add</span><span class="hl opt">((</span>nextx<span class="hl opt">,</span> nexty<span class="hl opt">))</span>
+                                nextx<span class="hl opt">,</span> nexty <span class="hl opt">=</span> x <span class="hl opt">+</span> dx<span class="hl opt">,</span> y <span class="hl opt">+</span> dy
+            self<span class="hl opt">.</span>visibility <span class="hl opt">=</span> vis
+            VISIBILITY_MATRIX_CACHE<span class="hl opt">[</span><span class="hl kwb">reduce</span><span class="hl opt">(</span><span class="hl kwb">str</span><span class="hl opt">.</span>__add__<span class="hl opt">,</span> self<span class="hl opt">.</span>layoutText<span class="hl opt">)] =</span> vis
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>visibility <span class="hl opt">=</span> VISIBILITY_MATRIX_CACHE<span class="hl opt">[</span><span class="hl kwb">reduce</span><span class="hl opt">(</span><span class="hl kwb">str</span><span class="hl opt">.</span>__add__<span class="hl opt">,</span> self<span class="hl opt">.</span>layoutText<span class="hl opt">)]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isWall</span><span class="hl opt">(</span>self<span class="hl opt">,</span> pos<span class="hl opt">):</span>
+        x<span class="hl opt">,</span> col <span class="hl opt">=</span> pos
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>col<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getRandomLegalPosition</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        x <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">choice</span><span class="hl opt">(</span><span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">))</span>
+        y <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">choice</span><span class="hl opt">(</span><span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>height<span class="hl opt">))</span>
+        <span class="hl kwa">while</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">( (</span>x<span class="hl opt">,</span> y<span class="hl opt">) ):</span>
+            x <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">choice</span><span class="hl opt">(</span><span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">))</span>
+            y <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">choice</span><span class="hl opt">(</span><span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>height<span class="hl opt">))</span>
+        <span class="hl kwa">return</span> <span class="hl opt">(</span>x<span class="hl opt">,</span>y<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getRandomCorner</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        poses <span class="hl opt">= [(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">), (</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>height <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">), (</span>self<span class="hl opt">.</span>width <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">), (</span>self<span class="hl opt">.</span>width <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">,</span> self<span class="hl opt">.</span>height <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">)]</span>
+        <span class="hl kwa">return</span> random<span class="hl opt">.</span><span class="hl kwd">choice</span><span class="hl opt">(</span>poses<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getFurthestCorner</span><span class="hl opt">(</span>self<span class="hl opt">,</span> pacPos<span class="hl opt">):</span>
+        poses <span class="hl opt">= [(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">), (</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>height <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">), (</span>self<span class="hl opt">.</span>width <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">), (</span>self<span class="hl opt">.</span>width <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">,</span> self<span class="hl opt">.</span>height <span class="hl opt">-</span> <span class="hl num">2</span><span class="hl opt">)]</span>
+        dist<span class="hl opt">,</span> pos <span class="hl opt">=</span> <span class="hl kwb">max</span><span class="hl opt">([(</span><span class="hl kwd">manhattanDistance</span><span class="hl opt">(</span>p<span class="hl opt">,</span> pacPos<span class="hl opt">),</span> p<span class="hl opt">)</span> <span class="hl kwa">for</span> p <span class="hl kwa">in</span> poses<span class="hl opt">])</span>
+        <span class="hl kwa">return</span> pos
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isVisibleFrom</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghostPos<span class="hl opt">,</span> pacPos<span class="hl opt">,</span> pacDirection<span class="hl opt">):</span>
+        row<span class="hl opt">,</span> col <span class="hl opt">= [</span><span class="hl kwb">int</span><span class="hl opt">(</span>x<span class="hl opt">)</span> <span class="hl kwa">for</span> x <span class="hl kwa">in</span> pacPos<span class="hl opt">]</span>
+        <span class="hl kwa">return</span> ghostPos <span class="hl kwa">in</span> self<span class="hl opt">.</span>visibility<span class="hl opt">[</span>row<span class="hl opt">][</span>col<span class="hl opt">][</span>pacDirection<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__str__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl str">&quot;</span><span class="hl esc">\n</span><span class="hl str">&quot;</span><span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">(</span>self<span class="hl opt">.</span>layoutText<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">deepCopy</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl kwd">Layout</span><span class="hl opt">(</span>self<span class="hl opt">.</span>layoutText<span class="hl opt">[:])</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">processLayoutText</span><span class="hl opt">(</span>self<span class="hl opt">,</span> layoutText<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Coordinates are flipped from the input format to the (x,y) convention here</span>
+<span class="hl str"></span>
+<span class="hl str">        The shape of the maze.  Each character</span>
+<span class="hl str">        represents a different type of object.</span>
+<span class="hl str">         % - Wall</span>
+<span class="hl str">         . - Food</span>
+<span class="hl str">         o - Capsule</span>
+<span class="hl str">         G - Ghost</span>
+<span class="hl str">         P - Pacman</span>
+<span class="hl str">        Other characters are ignored.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        maxY <span class="hl opt">=</span> self<span class="hl opt">.</span>height <span class="hl opt">-</span> <span class="hl num">1</span>
+        <span class="hl kwa">for</span> y <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>height<span class="hl opt">):</span>
+            <span class="hl kwa">for</span> x <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">):</span>
+                layoutChar <span class="hl opt">=</span> layoutText<span class="hl opt">[</span>maxY <span class="hl opt">-</span> y<span class="hl opt">][</span>x<span class="hl opt">]</span>
+                self<span class="hl opt">.</span><span class="hl kwd">processLayoutChar</span><span class="hl opt">(</span>x<span class="hl opt">,</span> y<span class="hl opt">,</span> layoutChar<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>agentPositions<span class="hl opt">.</span><span class="hl kwd">sort</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>agentPositions <span class="hl opt">= [ (</span> i <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">,</span> pos<span class="hl opt">)</span> <span class="hl kwa">for</span> i<span class="hl opt">,</span> pos <span class="hl kwa">in</span> self<span class="hl opt">.</span>agentPositions<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">processLayoutChar</span><span class="hl opt">(</span>self<span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">,</span> layoutChar<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> layoutChar <span class="hl opt">==</span> <span class="hl str">'%'</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">] =</span> <span class="hl kwa">True</span>
+        <span class="hl kwa">elif</span> layoutChar <span class="hl opt">==</span> <span class="hl str">'.'</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>food<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">] =</span> <span class="hl kwa">True</span>
+        <span class="hl kwa">elif</span> layoutChar <span class="hl opt">==</span> <span class="hl str">'o'</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>capsules<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">((</span>x<span class="hl opt">,</span> y<span class="hl opt">))</span>
+        <span class="hl kwa">elif</span> layoutChar <span class="hl opt">==</span> <span class="hl str">'P'</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span>agentPositions<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span><span class="hl num">0</span><span class="hl opt">, (</span>x<span class="hl opt">,</span> y<span class="hl opt">) ) )</span>
+        <span class="hl kwa">elif</span> layoutChar <span class="hl kwa">in</span> <span class="hl opt">[</span><span class="hl str">'G'</span><span class="hl opt">]:</span>
+            self<span class="hl opt">.</span>agentPositions<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span><span class="hl num">1</span><span class="hl opt">, (</span>x<span class="hl opt">,</span> y<span class="hl opt">) ) )</span>
+            self<span class="hl opt">.</span>numGhosts <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">elif</span> layoutChar <span class="hl kwa">in</span>  <span class="hl opt">[</span><span class="hl str">'1'</span><span class="hl opt">,</span> <span class="hl str">'2'</span><span class="hl opt">,</span> <span class="hl str">'3'</span><span class="hl opt">,</span> <span class="hl str">'4'</span><span class="hl opt">]:</span>
+            self<span class="hl opt">.</span>agentPositions<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span><span class="hl kwb">int</span><span class="hl opt">(</span>layoutChar<span class="hl opt">), (</span>x<span class="hl opt">,</span>y<span class="hl opt">)))</span>
+            self<span class="hl opt">.</span>numGhosts <span class="hl opt">+=</span> <span class="hl num">1</span>
+<span class="hl kwa">def</span> <span class="hl kwd">getLayout</span><span class="hl opt">(</span>name<span class="hl opt">,</span> back <span class="hl opt">=</span> <span class="hl num">2</span><span class="hl opt">):</span>
+    <span class="hl kwa">if</span> name<span class="hl opt">.</span><span class="hl kwd">endswith</span><span class="hl opt">(</span><span class="hl str">'.lay'</span><span class="hl opt">):</span>
+        layout <span class="hl opt">=</span> <span class="hl kwd">tryToLoad</span><span class="hl opt">(</span><span class="hl str">'layouts/'</span> <span class="hl opt">+</span> name<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> layout <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> layout <span class="hl opt">=</span> <span class="hl kwd">tryToLoad</span><span class="hl opt">(</span>name<span class="hl opt">)</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        layout <span class="hl opt">=</span> <span class="hl kwd">tryToLoad</span><span class="hl opt">(</span><span class="hl str">'layouts/'</span> <span class="hl opt">+</span> name <span class="hl opt">+</span> <span class="hl str">'.lay'</span><span class="hl opt">)</span>
+        <span class="hl kwa">if</span> layout <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> layout <span class="hl opt">=</span> <span class="hl kwd">tryToLoad</span><span class="hl opt">(</span>name <span class="hl opt">+</span> <span class="hl str">'.lay'</span><span class="hl opt">)</span>
+    <span class="hl kwa">if</span> layout <span class="hl opt">==</span> <span class="hl kwa">None and</span> back <span class="hl opt">&gt;=</span> <span class="hl num">0</span><span class="hl opt">:</span>
+        curdir <span class="hl opt">=</span> os<span class="hl opt">.</span>path<span class="hl opt">.</span><span class="hl kwd">abspath</span><span class="hl opt">(</span><span class="hl str">'.'</span><span class="hl opt">)</span>
+        os<span class="hl opt">.</span><span class="hl kwd">chdir</span><span class="hl opt">(</span><span class="hl str">'..'</span><span class="hl opt">)</span>
+        layout <span class="hl opt">=</span> <span class="hl kwd">getLayout</span><span class="hl opt">(</span>name<span class="hl opt">,</span> back <span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">)</span>
+        os<span class="hl opt">.</span><span class="hl kwd">chdir</span><span class="hl opt">(</span>curdir<span class="hl opt">)</span>
+    <span class="hl kwa">return</span> layout
+
+<span class="hl kwa">def</span> <span class="hl kwd">tryToLoad</span><span class="hl opt">(</span>fullname<span class="hl opt">):</span>
+    <span class="hl kwa">if</span><span class="hl opt">(</span><span class="hl kwa">not</span> os<span class="hl opt">.</span>path<span class="hl opt">.</span><span class="hl kwd">exists</span><span class="hl opt">(</span>fullname<span class="hl opt">)):</span> <span class="hl kwa">return None</span>
+    f <span class="hl opt">=</span> <span class="hl kwb">open</span><span class="hl opt">(</span>fullname<span class="hl opt">)</span>
+    <span class="hl kwa">try</span><span class="hl opt">:</span> <span class="hl kwa">return</span> <span class="hl kwd">Layout</span><span class="hl opt">([</span>line<span class="hl opt">.</span><span class="hl kwd">strip</span><span class="hl opt">()</span> <span class="hl kwa">for</span> line <span class="hl kwa">in</span> f<span class="hl opt">])</span>
+    <span class="hl kwa">finally</span><span class="hl opt">:</span> f<span class="hl opt">.</span><span class="hl kwd">close</span><span class="hl opt">()</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

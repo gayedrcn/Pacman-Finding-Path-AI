@@ -1,0 +1,661 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>util.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># util.py</span>
+<span class="hl slc"># -------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">import</span> sys
+<span class="hl kwa">import</span> inspect
+<span class="hl kwa">import</span> heapq<span class="hl opt">,</span> random
+<span class="hl kwa">import</span> cStringIO
+
+
+<span class="hl kwa">class</span> FixedRandom<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        fixedState <span class="hl opt">= (</span><span class="hl num">3</span><span class="hl opt">, (</span><span class="hl num">2147483648L</span><span class="hl opt">,</span> <span class="hl num">507801126L</span><span class="hl opt">,</span> <span class="hl num">683453281L</span><span class="hl opt">,</span> <span class="hl num">310439348L</span><span class="hl opt">,</span> <span class="hl num">2597246090L</span><span class="hl opt">,</span> \
+            <span class="hl num">2209084787L</span><span class="hl opt">,</span> <span class="hl num">2267831527L</span><span class="hl opt">,</span> <span class="hl num">979920060L</span><span class="hl opt">,</span> <span class="hl num">3098657677L</span><span class="hl opt">,</span> <span class="hl num">37650879L</span><span class="hl opt">,</span> <span class="hl num">807947081L</span><span class="hl opt">,</span> <span class="hl num">3974896263L</span><span class="hl opt">,</span> \
+            <span class="hl num">881243242L</span><span class="hl opt">,</span> <span class="hl num">3100634921L</span><span class="hl opt">,</span> <span class="hl num">1334775171L</span><span class="hl opt">,</span> <span class="hl num">3965168385L</span><span class="hl opt">,</span> <span class="hl num">746264660L</span><span class="hl opt">,</span> <span class="hl num">4074750168L</span><span class="hl opt">,</span> <span class="hl num">500078808L</span><span class="hl opt">,</span> \
+            <span class="hl num">776561771L</span><span class="hl opt">,</span> <span class="hl num">702988163L</span><span class="hl opt">,</span> <span class="hl num">1636311725L</span><span class="hl opt">,</span> <span class="hl num">2559226045L</span><span class="hl opt">,</span> <span class="hl num">157578202L</span><span class="hl opt">,</span> <span class="hl num">2498342920L</span><span class="hl opt">,</span> <span class="hl num">2794591496L</span><span class="hl opt">,</span> \
+            <span class="hl num">4130598723L</span><span class="hl opt">,</span> <span class="hl num">496985844L</span><span class="hl opt">,</span> <span class="hl num">2944563015L</span><span class="hl opt">,</span> <span class="hl num">3731321600L</span><span class="hl opt">,</span> <span class="hl num">3514814613L</span><span class="hl opt">,</span> <span class="hl num">3362575829L</span><span class="hl opt">,</span> <span class="hl num">3038768745L</span><span class="hl opt">,</span> \
+            <span class="hl num">2206497038L</span><span class="hl opt">,</span> <span class="hl num">1108748846L</span><span class="hl opt">,</span> <span class="hl num">1317460727L</span><span class="hl opt">,</span> <span class="hl num">3134077628L</span><span class="hl opt">,</span> <span class="hl num">988312410L</span><span class="hl opt">,</span> <span class="hl num">1674063516L</span><span class="hl opt">,</span> <span class="hl num">746456451L</span><span class="hl opt">,</span> \
+            <span class="hl num">3958482413L</span><span class="hl opt">,</span> <span class="hl num">1857117812L</span><span class="hl opt">,</span> <span class="hl num">708750586L</span><span class="hl opt">,</span> <span class="hl num">1583423339L</span><span class="hl opt">,</span> <span class="hl num">3466495450L</span><span class="hl opt">,</span> <span class="hl num">1536929345L</span><span class="hl opt">,</span> <span class="hl num">1137240525L</span><span class="hl opt">,</span> \
+            <span class="hl num">3875025632L</span><span class="hl opt">,</span> <span class="hl num">2466137587L</span><span class="hl opt">,</span> <span class="hl num">1235845595L</span><span class="hl opt">,</span> <span class="hl num">4214575620L</span><span class="hl opt">,</span> <span class="hl num">3792516855L</span><span class="hl opt">,</span> <span class="hl num">657994358L</span><span class="hl opt">,</span> <span class="hl num">1241843248L</span><span class="hl opt">,</span> \
+            <span class="hl num">1695651859L</span><span class="hl opt">,</span> <span class="hl num">3678946666L</span><span class="hl opt">,</span> <span class="hl num">1929922113L</span><span class="hl opt">,</span> <span class="hl num">2351044952L</span><span class="hl opt">,</span> <span class="hl num">2317810202L</span><span class="hl opt">,</span> <span class="hl num">2039319015L</span><span class="hl opt">,</span> <span class="hl num">460787996L</span><span class="hl opt">,</span> \
+            <span class="hl num">3654096216L</span><span class="hl opt">,</span> <span class="hl num">4068721415L</span><span class="hl opt">,</span> <span class="hl num">1814163703L</span><span class="hl opt">,</span> <span class="hl num">2904112444L</span><span class="hl opt">,</span> <span class="hl num">1386111013L</span><span class="hl opt">,</span> <span class="hl num">574629867L</span><span class="hl opt">,</span> <span class="hl num">2654529343L</span><span class="hl opt">,</span> \
+            <span class="hl num">3833135042L</span><span class="hl opt">,</span> <span class="hl num">2725328455L</span><span class="hl opt">,</span> <span class="hl num">552431551L</span><span class="hl opt">,</span> <span class="hl num">4006991378L</span><span class="hl opt">,</span> <span class="hl num">1331562057L</span><span class="hl opt">,</span> <span class="hl num">3710134542L</span><span class="hl opt">,</span> <span class="hl num">303171486L</span><span class="hl opt">,</span> \
+            <span class="hl num">1203231078L</span><span class="hl opt">,</span> <span class="hl num">2670768975L</span><span class="hl opt">,</span> <span class="hl num">54570816L</span><span class="hl opt">,</span> <span class="hl num">2679609001L</span><span class="hl opt">,</span> <span class="hl num">578983064L</span><span class="hl opt">,</span> <span class="hl num">1271454725L</span><span class="hl opt">,</span> <span class="hl num">3230871056L</span><span class="hl opt">,</span> \
+            <span class="hl num">2496832891L</span><span class="hl opt">,</span> <span class="hl num">2944938195L</span><span class="hl opt">,</span> <span class="hl num">1608828728L</span><span class="hl opt">,</span> <span class="hl num">367886575L</span><span class="hl opt">,</span> <span class="hl num">2544708204L</span><span class="hl opt">,</span> <span class="hl num">103775539L</span><span class="hl opt">,</span> <span class="hl num">1912402393L</span><span class="hl opt">,</span> \
+            <span class="hl num">1098482180L</span><span class="hl opt">,</span> <span class="hl num">2738577070L</span><span class="hl opt">,</span> <span class="hl num">3091646463L</span><span class="hl opt">,</span> <span class="hl num">1505274463L</span><span class="hl opt">,</span> <span class="hl num">2079416566L</span><span class="hl opt">,</span> <span class="hl num">659100352L</span><span class="hl opt">,</span> <span class="hl num">839995305L</span><span class="hl opt">,</span> \
+            <span class="hl num">1696257633L</span><span class="hl opt">,</span> <span class="hl num">274389836L</span><span class="hl opt">,</span> <span class="hl num">3973303017L</span><span class="hl opt">,</span> <span class="hl num">671127655L</span><span class="hl opt">,</span> <span class="hl num">1061109122L</span><span class="hl opt">,</span> <span class="hl num">517486945L</span><span class="hl opt">,</span> <span class="hl num">1379749962L</span><span class="hl opt">,</span> \
+            <span class="hl num">3421383928L</span><span class="hl opt">,</span> <span class="hl num">3116950429L</span><span class="hl opt">,</span> <span class="hl num">2165882425L</span><span class="hl opt">,</span> <span class="hl num">2346928266L</span><span class="hl opt">,</span> <span class="hl num">2892678711L</span><span class="hl opt">,</span> <span class="hl num">2936066049L</span><span class="hl opt">,</span> <span class="hl num">1316407868L</span><span class="hl opt">,</span> \
+            <span class="hl num">2873411858L</span><span class="hl opt">,</span> <span class="hl num">4279682888L</span><span class="hl opt">,</span> <span class="hl num">2744351923L</span><span class="hl opt">,</span> <span class="hl num">3290373816L</span><span class="hl opt">,</span> <span class="hl num">1014377279L</span><span class="hl opt">,</span> <span class="hl num">955200944L</span><span class="hl opt">,</span> <span class="hl num">4220990860L</span><span class="hl opt">,</span> \
+            <span class="hl num">2386098930L</span><span class="hl opt">,</span> <span class="hl num">1772997650L</span><span class="hl opt">,</span> <span class="hl num">3757346974L</span><span class="hl opt">,</span> <span class="hl num">1621616438L</span><span class="hl opt">,</span> <span class="hl num">2877097197L</span><span class="hl opt">,</span> <span class="hl num">442116595L</span><span class="hl opt">,</span> <span class="hl num">2010480266L</span><span class="hl opt">,</span> \
+            <span class="hl num">2867861469L</span><span class="hl opt">,</span> <span class="hl num">2955352695L</span><span class="hl opt">,</span> <span class="hl num">605335967L</span><span class="hl opt">,</span> <span class="hl num">2222936009L</span><span class="hl opt">,</span> <span class="hl num">2067554933L</span><span class="hl opt">,</span> <span class="hl num">4129906358L</span><span class="hl opt">,</span> <span class="hl num">1519608541L</span><span class="hl opt">,</span> \
+            <span class="hl num">1195006590L</span><span class="hl opt">,</span> <span class="hl num">1942991038L</span><span class="hl opt">,</span> <span class="hl num">2736562236L</span><span class="hl opt">,</span> <span class="hl num">279162408L</span><span class="hl opt">,</span> <span class="hl num">1415982909L</span><span class="hl opt">,</span> <span class="hl num">4099901426L</span><span class="hl opt">,</span> <span class="hl num">1732201505L</span><span class="hl opt">,</span> \
+            <span class="hl num">2934657937L</span><span class="hl opt">,</span> <span class="hl num">860563237L</span><span class="hl opt">,</span> <span class="hl num">2479235483L</span><span class="hl opt">,</span> <span class="hl num">3081651097L</span><span class="hl opt">,</span> <span class="hl num">2244720867L</span><span class="hl opt">,</span> <span class="hl num">3112631622L</span><span class="hl opt">,</span> <span class="hl num">1636991639L</span><span class="hl opt">,</span> \
+            <span class="hl num">3860393305L</span><span class="hl opt">,</span> <span class="hl num">2312061927L</span><span class="hl opt">,</span> <span class="hl num">48780114L</span><span class="hl opt">,</span> <span class="hl num">1149090394L</span><span class="hl opt">,</span> <span class="hl num">2643246550L</span><span class="hl opt">,</span> <span class="hl num">1764050647L</span><span class="hl opt">,</span> <span class="hl num">3836789087L</span><span class="hl opt">,</span> \
+            <span class="hl num">3474859076L</span><span class="hl opt">,</span> <span class="hl num">4237194338L</span><span class="hl opt">,</span> <span class="hl num">1735191073L</span><span class="hl opt">,</span> <span class="hl num">2150369208L</span><span class="hl opt">,</span> <span class="hl num">92164394L</span><span class="hl opt">,</span> <span class="hl num">756974036L</span><span class="hl opt">,</span> <span class="hl num">2314453957L</span><span class="hl opt">,</span> \
+            <span class="hl num">323969533L</span><span class="hl opt">,</span> <span class="hl num">4267621035L</span><span class="hl opt">,</span> <span class="hl num">283649842L</span><span class="hl opt">,</span> <span class="hl num">810004843L</span><span class="hl opt">,</span> <span class="hl num">727855536L</span><span class="hl opt">,</span> <span class="hl num">1757827251L</span><span class="hl opt">,</span> <span class="hl num">3334960421L</span><span class="hl opt">,</span> \
+            <span class="hl num">3261035106L</span><span class="hl opt">,</span> <span class="hl num">38417393L</span><span class="hl opt">,</span> <span class="hl num">2660980472L</span><span class="hl opt">,</span> <span class="hl num">1256633965L</span><span class="hl opt">,</span> <span class="hl num">2184045390L</span><span class="hl opt">,</span> <span class="hl num">811213141L</span><span class="hl opt">,</span> <span class="hl num">2857482069L</span><span class="hl opt">,</span> \
+            <span class="hl num">2237770878L</span><span class="hl opt">,</span> <span class="hl num">3891003138L</span><span class="hl opt">,</span> <span class="hl num">2787806886L</span><span class="hl opt">,</span> <span class="hl num">2435192790L</span><span class="hl opt">,</span> <span class="hl num">2249324662L</span><span class="hl opt">,</span> <span class="hl num">3507764896L</span><span class="hl opt">,</span> <span class="hl num">995388363L</span><span class="hl opt">,</span> \
+            <span class="hl num">856944153L</span><span class="hl opt">,</span> <span class="hl num">619213904L</span><span class="hl opt">,</span> <span class="hl num">3233967826L</span><span class="hl opt">,</span> <span class="hl num">3703465555L</span><span class="hl opt">,</span> <span class="hl num">3286531781L</span><span class="hl opt">,</span> <span class="hl num">3863193356L</span><span class="hl opt">,</span> <span class="hl num">2992340714L</span><span class="hl opt">,</span> \
+            <span class="hl num">413696855L</span><span class="hl opt">,</span> <span class="hl num">3865185632L</span><span class="hl opt">,</span> <span class="hl num">1704163171L</span><span class="hl opt">,</span> <span class="hl num">3043634452L</span><span class="hl opt">,</span> <span class="hl num">2225424707L</span><span class="hl opt">,</span> <span class="hl num">2199018022L</span><span class="hl opt">,</span> <span class="hl num">3506117517L</span><span class="hl opt">,</span> \
+            <span class="hl num">3311559776L</span><span class="hl opt">,</span> <span class="hl num">3374443561L</span><span class="hl opt">,</span> <span class="hl num">1207829628L</span><span class="hl opt">,</span> <span class="hl num">668793165L</span><span class="hl opt">,</span> <span class="hl num">1822020716L</span><span class="hl opt">,</span> <span class="hl num">2082656160L</span><span class="hl opt">,</span> <span class="hl num">1160606415L</span><span class="hl opt">,</span> \
+            <span class="hl num">3034757648L</span><span class="hl opt">,</span> <span class="hl num">741703672L</span><span class="hl opt">,</span> <span class="hl num">3094328738L</span><span class="hl opt">,</span> <span class="hl num">459332691L</span><span class="hl opt">,</span> <span class="hl num">2702383376L</span><span class="hl opt">,</span> <span class="hl num">1610239915L</span><span class="hl opt">,</span> <span class="hl num">4162939394L</span><span class="hl opt">,</span> \
+            <span class="hl num">557861574L</span><span class="hl opt">,</span> <span class="hl num">3805706338L</span><span class="hl opt">,</span> <span class="hl num">3832520705L</span><span class="hl opt">,</span> <span class="hl num">1248934879L</span><span class="hl opt">,</span> <span class="hl num">3250424034L</span><span class="hl opt">,</span> <span class="hl num">892335058L</span><span class="hl opt">,</span> <span class="hl num">74323433L</span><span class="hl opt">,</span> \
+            <span class="hl num">3209751608L</span><span class="hl opt">,</span> <span class="hl num">3213220797L</span><span class="hl opt">,</span> <span class="hl num">3444035873L</span><span class="hl opt">,</span> <span class="hl num">3743886725L</span><span class="hl opt">,</span> <span class="hl num">1783837251L</span><span class="hl opt">,</span> <span class="hl num">610968664L</span><span class="hl opt">,</span> <span class="hl num">580745246L</span><span class="hl opt">,</span> \
+            <span class="hl num">4041979504L</span><span class="hl opt">,</span> <span class="hl num">201684874L</span><span class="hl opt">,</span> <span class="hl num">2673219253L</span><span class="hl opt">,</span> <span class="hl num">1377283008L</span><span class="hl opt">,</span> <span class="hl num">3497299167L</span><span class="hl opt">,</span> <span class="hl num">2344209394L</span><span class="hl opt">,</span> <span class="hl num">2304982920L</span><span class="hl opt">,</span> \
+            <span class="hl num">3081403782L</span><span class="hl opt">,</span> <span class="hl num">2599256854L</span><span class="hl opt">,</span> <span class="hl num">3184475235L</span><span class="hl opt">,</span> <span class="hl num">3373055826L</span><span class="hl opt">,</span> <span class="hl num">695186388L</span><span class="hl opt">,</span> <span class="hl num">2423332338L</span><span class="hl opt">,</span> <span class="hl num">222864327L</span><span class="hl opt">,</span> \
+            <span class="hl num">1258227992L</span><span class="hl opt">,</span> <span class="hl num">3627871647L</span><span class="hl opt">,</span> <span class="hl num">3487724980L</span><span class="hl opt">,</span> <span class="hl num">4027953808L</span><span class="hl opt">,</span> <span class="hl num">3053320360L</span><span class="hl opt">,</span> <span class="hl num">533627073L</span><span class="hl opt">,</span> <span class="hl num">3026232514L</span><span class="hl opt">,</span> \
+            <span class="hl num">2340271949L</span><span class="hl opt">,</span> <span class="hl num">867277230L</span><span class="hl opt">,</span> <span class="hl num">868513116L</span><span class="hl opt">,</span> <span class="hl num">2158535651L</span><span class="hl opt">,</span> <span class="hl num">2487822909L</span><span class="hl opt">,</span> <span class="hl num">3428235761L</span><span class="hl opt">,</span> <span class="hl num">3067196046L</span><span class="hl opt">,</span> \
+            <span class="hl num">3435119657L</span><span class="hl opt">,</span> <span class="hl num">1908441839L</span><span class="hl opt">,</span> <span class="hl num">788668797L</span><span class="hl opt">,</span> <span class="hl num">3367703138L</span><span class="hl opt">,</span> <span class="hl num">3317763187L</span><span class="hl opt">,</span> <span class="hl num">908264443L</span><span class="hl opt">,</span> <span class="hl num">2252100381L</span><span class="hl opt">,</span> \
+            <span class="hl num">764223334L</span><span class="hl opt">,</span> <span class="hl num">4127108988L</span><span class="hl opt">,</span> <span class="hl num">384641349L</span><span class="hl opt">,</span> <span class="hl num">3377374722L</span><span class="hl opt">,</span> <span class="hl num">1263833251L</span><span class="hl opt">,</span> <span class="hl num">1958694944L</span><span class="hl opt">,</span> <span class="hl num">3847832657L</span><span class="hl opt">,</span> \
+            <span class="hl num">1253909612L</span><span class="hl opt">,</span> <span class="hl num">1096494446L</span><span class="hl opt">,</span> <span class="hl num">555725445L</span><span class="hl opt">,</span> <span class="hl num">2277045895L</span><span class="hl opt">,</span> <span class="hl num">3340096504L</span><span class="hl opt">,</span> <span class="hl num">1383318686L</span><span class="hl opt">,</span> <span class="hl num">4234428127L</span><span class="hl opt">,</span> \
+            <span class="hl num">1072582179L</span><span class="hl opt">,</span> <span class="hl num">94169494L</span><span class="hl opt">,</span> <span class="hl num">1064509968L</span><span class="hl opt">,</span> <span class="hl num">2681151917L</span><span class="hl opt">,</span> <span class="hl num">2681864920L</span><span class="hl opt">,</span> <span class="hl num">734708852L</span><span class="hl opt">,</span> <span class="hl num">1338914021L</span><span class="hl opt">,</span> \
+            <span class="hl num">1270409500L</span><span class="hl opt">,</span> <span class="hl num">1789469116L</span><span class="hl opt">,</span> <span class="hl num">4191988204L</span><span class="hl opt">,</span> <span class="hl num">1716329784L</span><span class="hl opt">,</span> <span class="hl num">2213764829L</span><span class="hl opt">,</span> <span class="hl num">3712538840L</span><span class="hl opt">,</span> <span class="hl num">919910444L</span><span class="hl opt">,</span> \
+            <span class="hl num">1318414447L</span><span class="hl opt">,</span> <span class="hl num">3383806712L</span><span class="hl opt">,</span> <span class="hl num">3054941722L</span><span class="hl opt">,</span> <span class="hl num">3378649942L</span><span class="hl opt">,</span> <span class="hl num">1205735655L</span><span class="hl opt">,</span> <span class="hl num">1268136494L</span><span class="hl opt">,</span> <span class="hl num">2214009444L</span><span class="hl opt">,</span> \
+            <span class="hl num">2532395133L</span><span class="hl opt">,</span> <span class="hl num">3232230447L</span><span class="hl opt">,</span> <span class="hl num">230294038L</span><span class="hl opt">,</span> <span class="hl num">342599089L</span><span class="hl opt">,</span> <span class="hl num">772808141L</span><span class="hl opt">,</span> <span class="hl num">4096882234L</span><span class="hl opt">,</span> <span class="hl num">3146662953L</span><span class="hl opt">,</span> \
+            <span class="hl num">2784264306L</span><span class="hl opt">,</span> <span class="hl num">1860954704L</span><span class="hl opt">,</span> <span class="hl num">2675279609L</span><span class="hl opt">,</span> <span class="hl num">2984212876L</span><span class="hl opt">,</span> <span class="hl num">2466966981L</span><span class="hl opt">,</span> <span class="hl num">2627986059L</span><span class="hl opt">,</span> <span class="hl num">2985545332L</span><span class="hl opt">,</span> \
+            <span class="hl num">2578042598L</span><span class="hl opt">,</span> <span class="hl num">1458940786L</span><span class="hl opt">,</span> <span class="hl num">2944243755L</span><span class="hl opt">,</span> <span class="hl num">3959506256L</span><span class="hl opt">,</span> <span class="hl num">1509151382L</span><span class="hl opt">,</span> <span class="hl num">325761900L</span><span class="hl opt">,</span> <span class="hl num">942251521L</span><span class="hl opt">,</span> \
+            <span class="hl num">4184289782L</span><span class="hl opt">,</span> <span class="hl num">2756231555L</span><span class="hl opt">,</span> <span class="hl num">3297811774L</span><span class="hl opt">,</span> <span class="hl num">1169708099L</span><span class="hl opt">,</span> <span class="hl num">3280524138L</span><span class="hl opt">,</span> <span class="hl num">3805245319L</span><span class="hl opt">,</span> <span class="hl num">3227360276L</span><span class="hl opt">,</span> \
+            <span class="hl num">3199632491L</span><span class="hl opt">,</span> <span class="hl num">2235795585L</span><span class="hl opt">,</span> <span class="hl num">2865407118L</span><span class="hl opt">,</span> <span class="hl num">36763651L</span><span class="hl opt">,</span> <span class="hl num">2441503575L</span><span class="hl opt">,</span> <span class="hl num">3314890374L</span><span class="hl opt">,</span> <span class="hl num">1755526087L</span><span class="hl opt">,</span> \
+            <span class="hl num">17915536L</span><span class="hl opt">,</span> <span class="hl num">1196948233L</span><span class="hl opt">,</span> <span class="hl num">949343045L</span><span class="hl opt">,</span> <span class="hl num">3815841867L</span><span class="hl opt">,</span> <span class="hl num">489007833L</span><span class="hl opt">,</span> <span class="hl num">2654997597L</span><span class="hl opt">,</span> <span class="hl num">2834744136L</span><span class="hl opt">,</span> \
+            <span class="hl num">417688687L</span><span class="hl opt">,</span> <span class="hl num">2843220846L</span><span class="hl opt">,</span> <span class="hl num">85621843L</span><span class="hl opt">,</span> <span class="hl num">747339336L</span><span class="hl opt">,</span> <span class="hl num">2043645709L</span><span class="hl opt">,</span> <span class="hl num">3520444394L</span><span class="hl opt">,</span> <span class="hl num">1825470818L</span><span class="hl opt">,</span> \
+            <span class="hl num">647778910L</span><span class="hl opt">,</span> <span class="hl num">275904777L</span><span class="hl opt">,</span> <span class="hl num">1249389189L</span><span class="hl opt">,</span> <span class="hl num">3640887431L</span><span class="hl opt">,</span> <span class="hl num">4200779599L</span><span class="hl opt">,</span> <span class="hl num">323384601L</span><span class="hl opt">,</span> <span class="hl num">3446088641L</span><span class="hl opt">,</span> \
+            <span class="hl num">4049835786L</span><span class="hl opt">,</span> <span class="hl num">1718989062L</span><span class="hl opt">,</span> <span class="hl num">3563787136L</span><span class="hl opt">,</span> <span class="hl num">44099190L</span><span class="hl opt">,</span> <span class="hl num">3281263107L</span><span class="hl opt">,</span> <span class="hl num">22910812L</span><span class="hl opt">,</span> <span class="hl num">1826109246L</span><span class="hl opt">,</span> \
+            <span class="hl num">745118154L</span><span class="hl opt">,</span> <span class="hl num">3392171319L</span><span class="hl opt">,</span> <span class="hl num">1571490704L</span><span class="hl opt">,</span> <span class="hl num">354891067L</span><span class="hl opt">,</span> <span class="hl num">815955642L</span><span class="hl opt">,</span> <span class="hl num">1453450421L</span><span class="hl opt">,</span> <span class="hl num">940015623L</span><span class="hl opt">,</span> \
+            <span class="hl num">796817754L</span><span class="hl opt">,</span> <span class="hl num">1260148619L</span><span class="hl opt">,</span> <span class="hl num">3898237757L</span><span class="hl opt">,</span> <span class="hl num">176670141L</span><span class="hl opt">,</span> <span class="hl num">1870249326L</span><span class="hl opt">,</span> <span class="hl num">3317738680L</span><span class="hl opt">,</span> <span class="hl num">448918002L</span><span class="hl opt">,</span> \
+            <span class="hl num">4059166594L</span><span class="hl opt">,</span> <span class="hl num">2003827551L</span><span class="hl opt">,</span> <span class="hl num">987091377L</span><span class="hl opt">,</span> <span class="hl num">224855998L</span><span class="hl opt">,</span> <span class="hl num">3520570137L</span><span class="hl opt">,</span> <span class="hl num">789522610L</span><span class="hl opt">,</span> <span class="hl num">2604445123L</span><span class="hl opt">,</span> \
+            <span class="hl num">454472869L</span><span class="hl opt">,</span> <span class="hl num">475688926L</span><span class="hl opt">,</span> <span class="hl num">2990723466L</span><span class="hl opt">,</span> <span class="hl num">523362238L</span><span class="hl opt">,</span> <span class="hl num">3897608102L</span><span class="hl opt">,</span> <span class="hl num">806637149L</span><span class="hl opt">,</span> <span class="hl num">2642229586L</span><span class="hl opt">,</span> \
+            <span class="hl num">2928614432L</span><span class="hl opt">,</span> <span class="hl num">1564415411L</span><span class="hl opt">,</span> <span class="hl num">1691381054L</span><span class="hl opt">,</span> <span class="hl num">3816907227L</span><span class="hl opt">,</span> <span class="hl num">4082581003L</span><span class="hl opt">,</span> <span class="hl num">1895544448L</span><span class="hl opt">,</span> <span class="hl num">3728217394L</span><span class="hl opt">,</span> \
+            <span class="hl num">3214813157L</span><span class="hl opt">,</span> <span class="hl num">4054301607L</span><span class="hl opt">,</span> <span class="hl num">1882632454L</span><span class="hl opt">,</span> <span class="hl num">2873728645L</span><span class="hl opt">,</span> <span class="hl num">3694943071L</span><span class="hl opt">,</span> <span class="hl num">1297991732L</span><span class="hl opt">,</span> <span class="hl num">2101682438L</span><span class="hl opt">,</span> \
+            <span class="hl num">3952579552L</span><span class="hl opt">,</span> <span class="hl num">678650400L</span><span class="hl opt">,</span> <span class="hl num">1391722293L</span><span class="hl opt">,</span> <span class="hl num">478833748L</span><span class="hl opt">,</span> <span class="hl num">2976468591L</span><span class="hl opt">,</span> <span class="hl num">158586606L</span><span class="hl opt">,</span> <span class="hl num">2576499787L</span><span class="hl opt">,</span> \
+            <span class="hl num">662690848L</span><span class="hl opt">,</span> <span class="hl num">3799889765L</span><span class="hl opt">,</span> <span class="hl num">3328894692L</span><span class="hl opt">,</span> <span class="hl num">2474578497L</span><span class="hl opt">,</span> <span class="hl num">2383901391L</span><span class="hl opt">,</span> <span class="hl num">1718193504L</span><span class="hl opt">,</span> <span class="hl num">3003184595L</span><span class="hl opt">,</span> \
+            <span class="hl num">3630561213L</span><span class="hl opt">,</span> <span class="hl num">1929441113L</span><span class="hl opt">,</span> <span class="hl num">3848238627L</span><span class="hl opt">,</span> <span class="hl num">1594310094L</span><span class="hl opt">,</span> <span class="hl num">3040359840L</span><span class="hl opt">,</span> <span class="hl num">3051803867L</span><span class="hl opt">,</span> <span class="hl num">2462788790L</span><span class="hl opt">,</span> \
+            <span class="hl num">954409915L</span><span class="hl opt">,</span> <span class="hl num">802581771L</span><span class="hl opt">,</span> <span class="hl num">681703307L</span><span class="hl opt">,</span> <span class="hl num">545982392L</span><span class="hl opt">,</span> <span class="hl num">2738993819L</span><span class="hl opt">,</span> <span class="hl num">8025358L</span><span class="hl opt">,</span> <span class="hl num">2827719383L</span><span class="hl opt">,</span> \
+            <span class="hl num">770471093L</span><span class="hl opt">,</span> <span class="hl num">3484895980L</span><span class="hl opt">,</span> <span class="hl num">3111306320L</span><span class="hl opt">,</span> <span class="hl num">3900000891L</span><span class="hl opt">,</span> <span class="hl num">2116916652L</span><span class="hl opt">,</span> <span class="hl num">397746721L</span><span class="hl opt">,</span> <span class="hl num">2087689510L</span><span class="hl opt">,</span> \
+            <span class="hl num">721433935L</span><span class="hl opt">,</span> <span class="hl num">1396088885L</span><span class="hl opt">,</span> <span class="hl num">2751612384L</span><span class="hl opt">,</span> <span class="hl num">1998988613L</span><span class="hl opt">,</span> <span class="hl num">2135074843L</span><span class="hl opt">,</span> <span class="hl num">2521131298L</span><span class="hl opt">,</span> <span class="hl num">707009172L</span><span class="hl opt">,</span> \
+            <span class="hl num">2398321482L</span><span class="hl opt">,</span> <span class="hl num">688041159L</span><span class="hl opt">,</span> <span class="hl num">2264560137L</span><span class="hl opt">,</span> <span class="hl num">482388305L</span><span class="hl opt">,</span> <span class="hl num">207864885L</span><span class="hl opt">,</span> <span class="hl num">3735036991L</span><span class="hl opt">,</span> <span class="hl num">3490348331L</span><span class="hl opt">,</span> \
+            <span class="hl num">1963642811L</span><span class="hl opt">,</span> <span class="hl num">3260224305L</span><span class="hl opt">,</span> <span class="hl num">3493564223L</span><span class="hl opt">,</span> <span class="hl num">1939428454L</span><span class="hl opt">,</span> <span class="hl num">1128799656L</span><span class="hl opt">,</span> <span class="hl num">1366012432L</span><span class="hl opt">,</span> <span class="hl num">2858822447L</span><span class="hl opt">,</span> \
+            <span class="hl num">1428147157L</span><span class="hl opt">,</span> <span class="hl num">2261125391L</span><span class="hl opt">,</span> <span class="hl num">1611208390L</span><span class="hl opt">,</span> <span class="hl num">1134826333L</span><span class="hl opt">,</span> <span class="hl num">2374102525L</span><span class="hl opt">,</span> <span class="hl num">3833625209L</span><span class="hl opt">,</span> <span class="hl num">2266397263L</span><span class="hl opt">,</span> \
+            <span class="hl num">3189115077L</span><span class="hl opt">,</span> <span class="hl num">770080230L</span><span class="hl opt">,</span> <span class="hl num">2674657172L</span><span class="hl opt">,</span> <span class="hl num">4280146640L</span><span class="hl opt">,</span> <span class="hl num">3604531615L</span><span class="hl opt">,</span> <span class="hl num">4235071805L</span><span class="hl opt">,</span> <span class="hl num">3436987249L</span><span class="hl opt">,</span> \
+            <span class="hl num">509704467L</span><span class="hl opt">,</span> <span class="hl num">2582695198L</span><span class="hl opt">,</span> <span class="hl num">4256268040L</span><span class="hl opt">,</span> <span class="hl num">3391197562L</span><span class="hl opt">,</span> <span class="hl num">1460642842L</span><span class="hl opt">,</span> <span class="hl num">1617931012L</span><span class="hl opt">,</span> <span class="hl num">457825497L</span><span class="hl opt">,</span> \
+            <span class="hl num">1031452907L</span><span class="hl opt">,</span> <span class="hl num">1330422862L</span><span class="hl opt">,</span> <span class="hl num">4125947620L</span><span class="hl opt">,</span> <span class="hl num">2280712485L</span><span class="hl opt">,</span> <span class="hl num">431892090L</span><span class="hl opt">,</span> <span class="hl num">2387410588L</span><span class="hl opt">,</span> <span class="hl num">2061126784L</span><span class="hl opt">,</span> \
+            <span class="hl num">896457479L</span><span class="hl opt">,</span> <span class="hl num">3480499461L</span><span class="hl opt">,</span> <span class="hl num">2488196663L</span><span class="hl opt">,</span> <span class="hl num">4021103792L</span><span class="hl opt">,</span> <span class="hl num">1877063114L</span><span class="hl opt">,</span> <span class="hl num">2744470201L</span><span class="hl opt">,</span> <span class="hl num">1046140599L</span><span class="hl opt">,</span> \
+            <span class="hl num">2129952955L</span><span class="hl opt">,</span> <span class="hl num">3583049218L</span><span class="hl opt">,</span> <span class="hl num">4217723693L</span><span class="hl opt">,</span> <span class="hl num">2720341743L</span><span class="hl opt">,</span> <span class="hl num">820661843L</span><span class="hl opt">,</span> <span class="hl num">1079873609L</span><span class="hl opt">,</span> <span class="hl num">3360954200L</span><span class="hl opt">,</span> \
+            <span class="hl num">3652304997L</span><span class="hl opt">,</span> <span class="hl num">3335838575L</span><span class="hl opt">,</span> <span class="hl num">2178810636L</span><span class="hl opt">,</span> <span class="hl num">1908053374L</span><span class="hl opt">,</span> <span class="hl num">4026721976L</span><span class="hl opt">,</span> <span class="hl num">1793145418L</span><span class="hl opt">,</span> <span class="hl num">476541615L</span><span class="hl opt">,</span> \
+            <span class="hl num">973420250L</span><span class="hl opt">,</span> <span class="hl num">515553040L</span><span class="hl opt">,</span> <span class="hl num">919292001L</span><span class="hl opt">,</span> <span class="hl num">2601786155L</span><span class="hl opt">,</span> <span class="hl num">1685119450L</span><span class="hl opt">,</span> <span class="hl num">3030170809L</span><span class="hl opt">,</span> <span class="hl num">1590676150L</span><span class="hl opt">,</span> \
+            <span class="hl num">1665099167L</span><span class="hl opt">,</span> <span class="hl num">651151584L</span><span class="hl opt">,</span> <span class="hl num">2077190587L</span><span class="hl opt">,</span> <span class="hl num">957892642L</span><span class="hl opt">,</span> <span class="hl num">646336572L</span><span class="hl opt">,</span> <span class="hl num">2743719258L</span><span class="hl opt">,</span> <span class="hl num">866169074L</span><span class="hl opt">,</span> \
+            <span class="hl num">851118829L</span><span class="hl opt">,</span> <span class="hl num">4225766285L</span><span class="hl opt">,</span> <span class="hl num">963748226L</span><span class="hl opt">,</span> <span class="hl num">799549420L</span><span class="hl opt">,</span> <span class="hl num">1955032629L</span><span class="hl opt">,</span> <span class="hl num">799460000L</span><span class="hl opt">,</span> <span class="hl num">2425744063L</span><span class="hl opt">,</span> \
+            <span class="hl num">2441291571L</span><span class="hl opt">,</span> <span class="hl num">1928963772L</span><span class="hl opt">,</span> <span class="hl num">528930629L</span><span class="hl opt">,</span> <span class="hl num">2591962884L</span><span class="hl opt">,</span> <span class="hl num">3495142819L</span><span class="hl opt">,</span> <span class="hl num">1896021824L</span><span class="hl opt">,</span> <span class="hl num">901320159L</span><span class="hl opt">,</span> \
+            <span class="hl num">3181820243L</span><span class="hl opt">,</span> <span class="hl num">843061941L</span><span class="hl opt">,</span> <span class="hl num">3338628510L</span><span class="hl opt">,</span> <span class="hl num">3782438992L</span><span class="hl opt">,</span> <span class="hl num">9515330L</span><span class="hl opt">,</span> <span class="hl num">1705797226L</span><span class="hl opt">,</span> <span class="hl num">953535929L</span><span class="hl opt">,</span> \
+            <span class="hl num">764833876L</span><span class="hl opt">,</span> <span class="hl num">3202464965L</span><span class="hl opt">,</span> <span class="hl num">2970244591L</span><span class="hl opt">,</span> <span class="hl num">519154982L</span><span class="hl opt">,</span> <span class="hl num">3390617541L</span><span class="hl opt">,</span> <span class="hl num">566616744L</span><span class="hl opt">,</span> <span class="hl num">3438031503L</span><span class="hl opt">,</span> \
+            <span class="hl num">1853838297L</span><span class="hl opt">,</span> <span class="hl num">170608755L</span><span class="hl opt">,</span> <span class="hl num">1393728434L</span><span class="hl opt">,</span> <span class="hl num">676900116L</span><span class="hl opt">,</span> <span class="hl num">3184965776L</span><span class="hl opt">,</span> <span class="hl num">1843100290L</span><span class="hl opt">,</span> <span class="hl num">78995357L</span><span class="hl opt">,</span> \
+            <span class="hl num">2227939888L</span><span class="hl opt">,</span> <span class="hl num">3460264600L</span><span class="hl opt">,</span> <span class="hl num">1745705055L</span><span class="hl opt">,</span> <span class="hl num">1474086965L</span><span class="hl opt">,</span> <span class="hl num">572796246L</span><span class="hl opt">,</span> <span class="hl num">4081303004L</span><span class="hl opt">,</span> <span class="hl num">882828851L</span><span class="hl opt">,</span> \
+            <span class="hl num">1295445825L</span><span class="hl opt">,</span> <span class="hl num">137639900L</span><span class="hl opt">,</span> <span class="hl num">3304579600L</span><span class="hl opt">,</span> <span class="hl num">2722437017L</span><span class="hl opt">,</span> <span class="hl num">4093422709L</span><span class="hl opt">,</span> <span class="hl num">273203373L</span><span class="hl opt">,</span> <span class="hl num">2666507854L</span><span class="hl opt">,</span> \
+            <span class="hl num">3998836510L</span><span class="hl opt">,</span> <span class="hl num">493829981L</span><span class="hl opt">,</span> <span class="hl num">1623949669L</span><span class="hl opt">,</span> <span class="hl num">3482036755L</span><span class="hl opt">,</span> <span class="hl num">3390023939L</span><span class="hl opt">,</span> <span class="hl num">833233937L</span><span class="hl opt">,</span> <span class="hl num">1639668730L</span><span class="hl opt">,</span> \
+            <span class="hl num">1499455075L</span><span class="hl opt">,</span> <span class="hl num">249728260L</span><span class="hl opt">,</span> <span class="hl num">1210694006L</span><span class="hl opt">,</span> <span class="hl num">3836497489L</span><span class="hl opt">,</span> <span class="hl num">1551488720L</span><span class="hl opt">,</span> <span class="hl num">3253074267L</span><span class="hl opt">,</span> <span class="hl num">3388238003L</span><span class="hl opt">,</span> \
+            <span class="hl num">2372035079L</span><span class="hl opt">,</span> <span class="hl num">3945715164L</span><span class="hl opt">,</span> <span class="hl num">2029501215L</span><span class="hl opt">,</span> <span class="hl num">3362012634L</span><span class="hl opt">,</span> <span class="hl num">2007375355L</span><span class="hl opt">,</span> <span class="hl num">4074709820L</span><span class="hl opt">,</span> <span class="hl num">631485888L</span><span class="hl opt">,</span> \
+            <span class="hl num">3135015769L</span><span class="hl opt">,</span> <span class="hl num">4273087084L</span><span class="hl opt">,</span> <span class="hl num">3648076204L</span><span class="hl opt">,</span> <span class="hl num">2739943601L</span><span class="hl opt">,</span> <span class="hl num">1374020358L</span><span class="hl opt">,</span> <span class="hl num">1760722448L</span><span class="hl opt">,</span> <span class="hl num">3773939706L</span><span class="hl opt">,</span> \
+            <span class="hl num">1313027823L</span><span class="hl opt">,</span> <span class="hl num">1895251226L</span><span class="hl opt">,</span> <span class="hl num">4224465911L</span><span class="hl opt">,</span> <span class="hl num">421382535L</span><span class="hl opt">,</span> <span class="hl num">1141067370L</span><span class="hl opt">,</span> <span class="hl num">3660034846L</span><span class="hl opt">,</span> <span class="hl num">3393185650L</span><span class="hl opt">,</span> \
+            <span class="hl num">1850995280L</span><span class="hl opt">,</span> <span class="hl num">1451917312L</span><span class="hl opt">,</span> <span class="hl num">3841455409L</span><span class="hl opt">,</span> <span class="hl num">3926840308L</span><span class="hl opt">,</span> <span class="hl num">1397397252L</span><span class="hl opt">,</span> <span class="hl num">2572864479L</span><span class="hl opt">,</span> <span class="hl num">2500171350L</span><span class="hl opt">,</span> \
+            <span class="hl num">3119920613L</span><span class="hl opt">,</span> <span class="hl num">531400869L</span><span class="hl opt">,</span> <span class="hl num">1626487579L</span><span class="hl opt">,</span> <span class="hl num">1099320497L</span><span class="hl opt">,</span> <span class="hl num">407414753L</span><span class="hl opt">,</span> <span class="hl num">2438623324L</span><span class="hl opt">,</span> <span class="hl num">99073255L</span><span class="hl opt">,</span> \
+            <span class="hl num">3175491512L</span><span class="hl opt">,</span> <span class="hl num">656431560L</span><span class="hl opt">,</span> <span class="hl num">1153671785L</span><span class="hl opt">,</span> <span class="hl num">236307875L</span><span class="hl opt">,</span> <span class="hl num">2824738046L</span><span class="hl opt">,</span> <span class="hl num">2320621382L</span><span class="hl opt">,</span> <span class="hl num">892174056L</span><span class="hl opt">,</span> \
+            <span class="hl num">230984053L</span><span class="hl opt">,</span> <span class="hl num">719791226L</span><span class="hl opt">,</span> <span class="hl num">2718891946L</span><span class="hl opt">,</span> <span class="hl num">624L</span><span class="hl opt">),</span> <span class="hl kwa">None</span><span class="hl opt">)</span>
+        self<span class="hl opt">.</span>random <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">Random</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>random<span class="hl opt">.</span><span class="hl kwd">setstate</span><span class="hl opt">(</span>fixedState<span class="hl opt">)</span>
+
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str"> Data structures useful for implementing SearchAgents</span>
+<span class="hl str">&quot;&quot;&quot;</span>
+
+<span class="hl kwa">class</span> Stack<span class="hl opt">:</span>
+    <span class="hl str">&quot;A container with a last-in-first-out (LIFO) queuing policy.&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span><span class="hl kwb">list</span> <span class="hl opt">= []</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">push</span><span class="hl opt">(</span>self<span class="hl opt">,</span>item<span class="hl opt">):</span>
+        <span class="hl str">&quot;Push 'item' onto the stack&quot;</span>
+        self<span class="hl opt">.</span><span class="hl kwb">list</span><span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>item<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">pop</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;Pop the most recently pushed item from the stack&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span><span class="hl kwb">list</span><span class="hl opt">.</span><span class="hl kwd">pop</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isEmpty</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns true if the stack is empty&quot;</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwb">list</span><span class="hl opt">) ==</span> <span class="hl num">0</span>
+
+<span class="hl kwa">class</span> Queue<span class="hl opt">:</span>
+    <span class="hl str">&quot;A container with a first-in-first-out (FIFO) queuing policy.&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span><span class="hl kwb">list</span> <span class="hl opt">= []</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">push</span><span class="hl opt">(</span>self<span class="hl opt">,</span>item<span class="hl opt">):</span>
+        <span class="hl str">&quot;Enqueue the 'item' into the queue&quot;</span>
+        self<span class="hl opt">.</span><span class="hl kwb">list</span><span class="hl opt">.</span><span class="hl kwd">insert</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span>item<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">pop</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Dequeue the earliest enqueued item still in the queue. This</span>
+<span class="hl str">          operation removes the item from the queue.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span><span class="hl kwb">list</span><span class="hl opt">.</span><span class="hl kwd">pop</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isEmpty</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns true if the queue is empty&quot;</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwb">list</span><span class="hl opt">) ==</span> <span class="hl num">0</span>
+
+<span class="hl kwa">class</span> PriorityQueue<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">      Implements a priority queue data structure. Each inserted item</span>
+<span class="hl str">      has a priority associated with it and the client is usually interested</span>
+<span class="hl str">      in quick retrieval of the lowest-priority item in the queue. This</span>
+<span class="hl str">      data structure allows O(1) access to the lowest-priority item.</span>
+<span class="hl str"></span>
+<span class="hl str">      Note that this PriorityQueue does not allow you to change the priority</span>
+<span class="hl str">      of an item.  However, you may insert the same item multiple times with</span>
+<span class="hl str">      different priorities.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span>  <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>heap <span class="hl opt">= []</span>
+        self<span class="hl opt">.</span>count <span class="hl opt">=</span> <span class="hl num">0</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">push</span><span class="hl opt">(</span>self<span class="hl opt">,</span> item<span class="hl opt">,</span> priority<span class="hl opt">):</span>
+        <span class="hl slc"># FIXME: restored old behaviour to check against old results better</span>
+        <span class="hl slc"># FIXED: restored to stable behaviour</span>
+        entry <span class="hl opt">= (</span>priority<span class="hl opt">,</span> self<span class="hl opt">.</span>count<span class="hl opt">,</span> item<span class="hl opt">)</span>
+        <span class="hl slc"># entry = (priority, item)</span>
+        heapq<span class="hl opt">.</span><span class="hl kwd">heappush</span><span class="hl opt">(</span>self<span class="hl opt">.</span>heap<span class="hl opt">,</span> entry<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>count <span class="hl opt">+=</span> <span class="hl num">1</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">pop</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl opt">(</span>_<span class="hl opt">,</span> _<span class="hl opt">,</span> item<span class="hl opt">) =</span> heapq<span class="hl opt">.</span><span class="hl kwd">heappop</span><span class="hl opt">(</span>self<span class="hl opt">.</span>heap<span class="hl opt">)</span>
+        <span class="hl slc">#  (_, item) = heapq.heappop(self.heap)</span>
+        <span class="hl kwa">return</span> item
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isEmpty</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span>heap<span class="hl opt">) ==</span> <span class="hl num">0</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">PriorityQueueWithFunction</span><span class="hl opt">(</span>PriorityQueue<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Implements a priority queue with the same push/pop signature of the</span>
+<span class="hl str">    Queue and the Stack classes. This is designed for drop-in replacement for</span>
+<span class="hl str">    those two classes. The caller has to provide a priority function, which</span>
+<span class="hl str">    extracts each item's priority.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span>  <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> priorityFunction<span class="hl opt">):</span>
+        <span class="hl str">&quot;priorityFunction (item) -&gt; priority&quot;</span>
+        self<span class="hl opt">.</span>priorityFunction <span class="hl opt">=</span> priorityFunction      <span class="hl slc"># store the priority function</span>
+        PriorityQueue<span class="hl opt">.</span><span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">)</span>        <span class="hl slc"># super-class initializer</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">push</span><span class="hl opt">(</span>self<span class="hl opt">,</span> item<span class="hl opt">):</span>
+        <span class="hl str">&quot;Adds an item to the queue with priority from the priority function&quot;</span>
+        PriorityQueue<span class="hl opt">.</span><span class="hl kwd">push</span><span class="hl opt">(</span>self<span class="hl opt">,</span> item<span class="hl opt">,</span> self<span class="hl opt">.</span><span class="hl kwd">priorityFunction</span><span class="hl opt">(</span>item<span class="hl opt">))</span>
+
+
+<span class="hl kwa">def</span> <span class="hl kwd">manhattanDistance</span><span class="hl opt">(</span> xy1<span class="hl opt">,</span> xy2 <span class="hl opt">):</span>
+    <span class="hl str">&quot;Returns the Manhattan distance between points xy1 and xy2&quot;</span>
+    <span class="hl kwa">return</span> <span class="hl kwb">abs</span><span class="hl opt">(</span> xy1<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] -</span> xy2<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] ) +</span> <span class="hl kwb">abs</span><span class="hl opt">(</span> xy1<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] -</span> xy2<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] )</span>
+
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">  Data structures and functions useful for various course projects</span>
+<span class="hl str"></span>
+<span class="hl str">  The search project should not need anything below this line.</span>
+<span class="hl str">&quot;&quot;&quot;</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">Counter</span><span class="hl opt">(</span><span class="hl kwb">dict</span><span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A counter keeps track of counts for a set of keys.</span>
+<span class="hl str"></span>
+<span class="hl str">    The counter class is an extension of the standard python</span>
+<span class="hl str">    dictionary type.  It is specialized to have number values</span>
+<span class="hl str">    (integers or floats), and includes a handful of additional</span>
+<span class="hl str">    functions to ease the task of counting data.  In particular,</span>
+<span class="hl str">    all keys are defaulted to have value 0.  Using a dictionary:</span>
+<span class="hl str"></span>
+<span class="hl str">    a = {}</span>
+<span class="hl str">    print a['test']</span>
+<span class="hl str"></span>
+<span class="hl str">    would give an error, while the Counter class analogue:</span>
+<span class="hl str"></span>
+<span class="hl str">    &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">    &gt;&gt;&gt; print a['test']</span>
+<span class="hl str">    0</span>
+<span class="hl str"></span>
+<span class="hl str">    returns the default 0 value. Note that to reference a key</span>
+<span class="hl str">    that you know is contained in the counter,</span>
+<span class="hl str">    you can still use the dictionary syntax:</span>
+<span class="hl str"></span>
+<span class="hl str">    &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">    &gt;&gt;&gt; a['test'] = 2</span>
+<span class="hl str">    &gt;&gt;&gt; print a['test']</span>
+<span class="hl str">    2</span>
+<span class="hl str"></span>
+<span class="hl str">    This is very useful for counting things without initializing their counts,</span>
+<span class="hl str">    see for example:</span>
+<span class="hl str"></span>
+<span class="hl str">    &gt;&gt;&gt; a['blah'] += 1</span>
+<span class="hl str">    &gt;&gt;&gt; print a['blah']</span>
+<span class="hl str">    1</span>
+<span class="hl str"></span>
+<span class="hl str">    The counter also includes additional functionality useful in implementing</span>
+<span class="hl str">    the classifiers for this assignment.  Two counters can be added,</span>
+<span class="hl str">    subtracted or multiplied together.  See below for details.  They can</span>
+<span class="hl str">    also be normalized and their total count and arg max can be extracted.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__getitem__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> idx<span class="hl opt">):</span>
+        self<span class="hl opt">.</span><span class="hl kwd">setdefault</span><span class="hl opt">(</span>idx<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">dict</span><span class="hl opt">.</span><span class="hl kwd">__getitem__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> idx<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">incrementAll</span><span class="hl opt">(</span>self<span class="hl opt">,</span> keys<span class="hl opt">,</span> count<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Increments all elements of keys by the same count.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; a.incrementAll(['one','two', 'three'], 1)</span>
+<span class="hl str">        &gt;&gt;&gt; a['one']</span>
+<span class="hl str">        1</span>
+<span class="hl str">        &gt;&gt;&gt; a['two']</span>
+<span class="hl str">        1</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> keys<span class="hl opt">:</span>
+            self<span class="hl opt">[</span>key<span class="hl opt">] +=</span> count
+
+    <span class="hl kwa">def</span> <span class="hl kwd">argMax</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the key with the highest value.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">keys</span><span class="hl opt">()) ==</span> <span class="hl num">0</span><span class="hl opt">:</span> <span class="hl kwa">return None</span>
+        all <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">items</span><span class="hl opt">()</span>
+        values <span class="hl opt">= [</span>x<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span> <span class="hl kwa">for</span> x <span class="hl kwa">in</span> all<span class="hl opt">]</span>
+        maxIndex <span class="hl opt">=</span> values<span class="hl opt">.</span><span class="hl kwd">index</span><span class="hl opt">(</span><span class="hl kwb">max</span><span class="hl opt">(</span>values<span class="hl opt">))</span>
+        <span class="hl kwa">return</span> all<span class="hl opt">[</span>maxIndex<span class="hl opt">][</span><span class="hl num">0</span><span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">sortedKeys</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns a list of keys sorted by their values.  Keys</span>
+<span class="hl str">        with the highest values will appear first.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; a['first'] = -2</span>
+<span class="hl str">        &gt;&gt;&gt; a['second'] = 4</span>
+<span class="hl str">        &gt;&gt;&gt; a['third'] = 1</span>
+<span class="hl str">        &gt;&gt;&gt; a.sortedKeys()</span>
+<span class="hl str">        ['second', 'third', 'first']</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        sortedItems <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">items</span><span class="hl opt">()</span>
+        compare <span class="hl opt">=</span> <span class="hl kwa">lambda</span> x<span class="hl opt">,</span> y<span class="hl opt">:</span>  <span class="hl kwd">sign</span><span class="hl opt">(</span>y<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] -</span> x<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">])</span>
+        sortedItems<span class="hl opt">.</span><span class="hl kwd">sort</span><span class="hl opt">(</span><span class="hl kwb">cmp</span><span class="hl opt">=</span>compare<span class="hl opt">)</span>
+        <span class="hl kwa">return</span> <span class="hl opt">[</span>x<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span> <span class="hl kwa">for</span> x <span class="hl kwa">in</span> sortedItems<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">totalCount</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the sum of counts for all keys.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">sum</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">values</span><span class="hl opt">())</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">normalize</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Edits the counter such that the total count of all</span>
+<span class="hl str">        keys sums to 1.  The ratio of counts for all keys</span>
+<span class="hl str">        will remain the same. Note that normalizing an empty</span>
+<span class="hl str">        Counter will result in an error.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        total <span class="hl opt">=</span> <span class="hl kwb">float</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">totalCount</span><span class="hl opt">())</span>
+        <span class="hl kwa">if</span> total <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span> <span class="hl kwa">return</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> self<span class="hl opt">.</span><span class="hl kwd">keys</span><span class="hl opt">():</span>
+            self<span class="hl opt">[</span>key<span class="hl opt">] =</span> self<span class="hl opt">[</span>key<span class="hl opt">] /</span> total
+
+    <span class="hl kwa">def</span> <span class="hl kwd">divideAll</span><span class="hl opt">(</span>self<span class="hl opt">,</span> divisor<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Divides all counts by divisor</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        divisor <span class="hl opt">=</span> <span class="hl kwb">float</span><span class="hl opt">(</span>divisor<span class="hl opt">)</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> self<span class="hl opt">:</span>
+            self<span class="hl opt">[</span>key<span class="hl opt">] /=</span> divisor
+
+    <span class="hl kwa">def</span> <span class="hl kwd">copy</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns a copy of the counter</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">return</span> <span class="hl kwd">Counter</span><span class="hl opt">(</span><span class="hl kwb">dict</span><span class="hl opt">.</span><span class="hl kwd">copy</span><span class="hl opt">(</span>self<span class="hl opt">))</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__mul__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> y <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Multiplying two counters gives the dot product of their vectors where</span>
+<span class="hl str">        each unique label is a vector element.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; b = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; a['first'] = -2</span>
+<span class="hl str">        &gt;&gt;&gt; a['second'] = 4</span>
+<span class="hl str">        &gt;&gt;&gt; b['first'] = 3</span>
+<span class="hl str">        &gt;&gt;&gt; b['second'] = 5</span>
+<span class="hl str">        &gt;&gt;&gt; a['third'] = 1.5</span>
+<span class="hl str">        &gt;&gt;&gt; a['fourth'] = 2.5</span>
+<span class="hl str">        &gt;&gt;&gt; a * b</span>
+<span class="hl str">        14</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwb">sum</span> <span class="hl opt">=</span> <span class="hl num">0</span>
+        x <span class="hl opt">=</span> self
+        <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>x<span class="hl opt">) &gt;</span> <span class="hl kwb">len</span><span class="hl opt">(</span>y<span class="hl opt">):</span>
+            x<span class="hl opt">,</span>y <span class="hl opt">=</span> y<span class="hl opt">,</span>x
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> x<span class="hl opt">:</span>
+            <span class="hl kwa">if</span> key <span class="hl kwa">not in</span> y<span class="hl opt">:</span>
+                <span class="hl kwa">continue</span>
+            <span class="hl kwb">sum</span> <span class="hl opt">+=</span> x<span class="hl opt">[</span>key<span class="hl opt">] *</span> y<span class="hl opt">[</span>key<span class="hl opt">]</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">sum</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__radd__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> y<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Adding another counter to a counter increments the current counter</span>
+<span class="hl str">        by the values stored in the second counter.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; b = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; a['first'] = -2</span>
+<span class="hl str">        &gt;&gt;&gt; a['second'] = 4</span>
+<span class="hl str">        &gt;&gt;&gt; b['first'] = 3</span>
+<span class="hl str">        &gt;&gt;&gt; b['third'] = 1</span>
+<span class="hl str">        &gt;&gt;&gt; a += b</span>
+<span class="hl str">        &gt;&gt;&gt; a['first']</span>
+<span class="hl str">        1</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">for</span> key<span class="hl opt">,</span> value <span class="hl kwa">in</span> y<span class="hl opt">.</span><span class="hl kwd">items</span><span class="hl opt">():</span>
+            self<span class="hl opt">[</span>key<span class="hl opt">] +=</span> value
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__add__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> y <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Adding two counters gives a counter with the union of all keys and</span>
+<span class="hl str">        counts of the second added to counts of the first.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; b = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; a['first'] = -2</span>
+<span class="hl str">        &gt;&gt;&gt; a['second'] = 4</span>
+<span class="hl str">        &gt;&gt;&gt; b['first'] = 3</span>
+<span class="hl str">        &gt;&gt;&gt; b['third'] = 1</span>
+<span class="hl str">        &gt;&gt;&gt; (a + b)['first']</span>
+<span class="hl str">        1</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        addend <span class="hl opt">=</span> <span class="hl kwd">Counter</span><span class="hl opt">()</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> self<span class="hl opt">:</span>
+            <span class="hl kwa">if</span> key <span class="hl kwa">in</span> y<span class="hl opt">:</span>
+                addend<span class="hl opt">[</span>key<span class="hl opt">] =</span> self<span class="hl opt">[</span>key<span class="hl opt">] +</span> y<span class="hl opt">[</span>key<span class="hl opt">]</span>
+            <span class="hl kwa">else</span><span class="hl opt">:</span>
+                addend<span class="hl opt">[</span>key<span class="hl opt">] =</span> self<span class="hl opt">[</span>key<span class="hl opt">]</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> y<span class="hl opt">:</span>
+            <span class="hl kwa">if</span> key <span class="hl kwa">in</span> self<span class="hl opt">:</span>
+                <span class="hl kwa">continue</span>
+            addend<span class="hl opt">[</span>key<span class="hl opt">] =</span> y<span class="hl opt">[</span>key<span class="hl opt">]</span>
+        <span class="hl kwa">return</span> addend
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__sub__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> y <span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Subtracting a counter from another gives a counter with the union of all keys and</span>
+<span class="hl str">        counts of the second subtracted from counts of the first.</span>
+<span class="hl str"></span>
+<span class="hl str">        &gt;&gt;&gt; a = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; b = Counter()</span>
+<span class="hl str">        &gt;&gt;&gt; a['first'] = -2</span>
+<span class="hl str">        &gt;&gt;&gt; a['second'] = 4</span>
+<span class="hl str">        &gt;&gt;&gt; b['first'] = 3</span>
+<span class="hl str">        &gt;&gt;&gt; b['third'] = 1</span>
+<span class="hl str">        &gt;&gt;&gt; (a - b)['first']</span>
+<span class="hl str">        -5</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        addend <span class="hl opt">=</span> <span class="hl kwd">Counter</span><span class="hl opt">()</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> self<span class="hl opt">:</span>
+            <span class="hl kwa">if</span> key <span class="hl kwa">in</span> y<span class="hl opt">:</span>
+                addend<span class="hl opt">[</span>key<span class="hl opt">] =</span> self<span class="hl opt">[</span>key<span class="hl opt">] -</span> y<span class="hl opt">[</span>key<span class="hl opt">]</span>
+            <span class="hl kwa">else</span><span class="hl opt">:</span>
+                addend<span class="hl opt">[</span>key<span class="hl opt">] =</span> self<span class="hl opt">[</span>key<span class="hl opt">]</span>
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> y<span class="hl opt">:</span>
+            <span class="hl kwa">if</span> key <span class="hl kwa">in</span> self<span class="hl opt">:</span>
+                <span class="hl kwa">continue</span>
+            addend<span class="hl opt">[</span>key<span class="hl opt">] = -</span><span class="hl num">1</span> <span class="hl opt">*</span> y<span class="hl opt">[</span>key<span class="hl opt">]</span>
+        <span class="hl kwa">return</span> addend
+
+<span class="hl kwa">def</span> <span class="hl kwd">raiseNotDefined</span><span class="hl opt">():</span>
+    fileName <span class="hl opt">=</span> inspect<span class="hl opt">.</span><span class="hl kwd">stack</span><span class="hl opt">()[</span><span class="hl num">1</span><span class="hl opt">][</span><span class="hl num">1</span><span class="hl opt">]</span>
+    line <span class="hl opt">=</span> inspect<span class="hl opt">.</span><span class="hl kwd">stack</span><span class="hl opt">()[</span><span class="hl num">1</span><span class="hl opt">][</span><span class="hl num">2</span><span class="hl opt">]</span>
+    method <span class="hl opt">=</span> inspect<span class="hl opt">.</span><span class="hl kwd">stack</span><span class="hl opt">()[</span><span class="hl num">1</span><span class="hl opt">][</span><span class="hl num">3</span><span class="hl opt">]</span>
+    
+    <span class="hl kwa">print</span> <span class="hl str">&quot;*** Method not implemented: %s at line %s of %s&quot;</span> <span class="hl opt">% (</span>method<span class="hl opt">,</span> line<span class="hl opt">,</span> fileName<span class="hl opt">)</span>
+    sys<span class="hl opt">.</span><span class="hl kwd">exit</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">normalize</span><span class="hl opt">(</span>vectorOrCounter<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    normalize a vector or counter by dividing each value by the sum of all values</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    normalizedCounter <span class="hl opt">=</span> <span class="hl kwd">Counter</span><span class="hl opt">()</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">type</span><span class="hl opt">(</span>vectorOrCounter<span class="hl opt">) ==</span> <span class="hl kwb">type</span><span class="hl opt">(</span>normalizedCounter<span class="hl opt">):</span>
+        counter <span class="hl opt">=</span> vectorOrCounter
+        total <span class="hl opt">=</span> <span class="hl kwb">float</span><span class="hl opt">(</span>counter<span class="hl opt">.</span><span class="hl kwd">totalCount</span><span class="hl opt">())</span>
+        <span class="hl kwa">if</span> total <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span> <span class="hl kwa">return</span> counter
+        <span class="hl kwa">for</span> key <span class="hl kwa">in</span> counter<span class="hl opt">.</span><span class="hl kwd">keys</span><span class="hl opt">():</span>
+            value <span class="hl opt">=</span> counter<span class="hl opt">[</span>key<span class="hl opt">]</span>
+            normalizedCounter<span class="hl opt">[</span>key<span class="hl opt">] =</span> value <span class="hl opt">/</span> total
+        <span class="hl kwa">return</span> normalizedCounter
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        vector <span class="hl opt">=</span> vectorOrCounter
+        s <span class="hl opt">=</span> <span class="hl kwb">float</span><span class="hl opt">(</span><span class="hl kwb">sum</span><span class="hl opt">(</span>vector<span class="hl opt">))</span>
+        <span class="hl kwa">if</span> s <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span> <span class="hl kwa">return</span> vector
+        <span class="hl kwa">return</span> <span class="hl opt">[</span>el <span class="hl opt">/</span> s <span class="hl kwa">for</span> el <span class="hl kwa">in</span> vector<span class="hl opt">]</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">nSample</span><span class="hl opt">(</span>distribution<span class="hl opt">,</span> values<span class="hl opt">,</span> n<span class="hl opt">):</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">sum</span><span class="hl opt">(</span>distribution<span class="hl opt">) !=</span> <span class="hl num">1</span><span class="hl opt">:</span>
+        distribution <span class="hl opt">=</span> <span class="hl kwd">normalize</span><span class="hl opt">(</span>distribution<span class="hl opt">)</span>
+    rand <span class="hl opt">= [</span>random<span class="hl opt">.</span><span class="hl kwd">random</span><span class="hl opt">()</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>n<span class="hl opt">)]</span>
+    rand<span class="hl opt">.</span><span class="hl kwd">sort</span><span class="hl opt">()</span>
+    samples <span class="hl opt">= []</span>
+    samplePos<span class="hl opt">,</span> distPos<span class="hl opt">,</span> cdf <span class="hl opt">=</span> <span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">,</span> distribution<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+    <span class="hl kwa">while</span> samplePos <span class="hl opt">&lt;</span> n<span class="hl opt">:</span>
+        <span class="hl kwa">if</span> rand<span class="hl opt">[</span>samplePos<span class="hl opt">] &lt;</span> cdf<span class="hl opt">:</span>
+            samplePos <span class="hl opt">+=</span> <span class="hl num">1</span>
+            samples<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>values<span class="hl opt">[</span>distPos<span class="hl opt">])</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            distPos <span class="hl opt">+=</span> <span class="hl num">1</span>
+            cdf <span class="hl opt">+=</span> distribution<span class="hl opt">[</span>distPos<span class="hl opt">]</span>
+    <span class="hl kwa">return</span> samples
+
+<span class="hl kwa">def</span> <span class="hl kwd">sample</span><span class="hl opt">(</span>distribution<span class="hl opt">,</span> values <span class="hl opt">=</span> <span class="hl kwa">None</span><span class="hl opt">):</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">type</span><span class="hl opt">(</span>distribution<span class="hl opt">) ==</span> Counter<span class="hl opt">:</span>
+        items <span class="hl opt">=</span> distribution<span class="hl opt">.</span><span class="hl kwd">items</span><span class="hl opt">()</span>
+        distribution <span class="hl opt">= [</span>i<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> items<span class="hl opt">]</span>
+        values <span class="hl opt">= [</span>i<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> items<span class="hl opt">]</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">sum</span><span class="hl opt">(</span>distribution<span class="hl opt">) !=</span> <span class="hl num">1</span><span class="hl opt">:</span>
+        distribution <span class="hl opt">=</span> <span class="hl kwd">normalize</span><span class="hl opt">(</span>distribution<span class="hl opt">)</span>
+    choice <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">random</span><span class="hl opt">()</span>
+    i<span class="hl opt">,</span> total<span class="hl opt">=</span> <span class="hl num">0</span><span class="hl opt">,</span> distribution<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+    <span class="hl kwa">while</span> choice <span class="hl opt">&gt;</span> total<span class="hl opt">:</span>
+        i <span class="hl opt">+=</span> <span class="hl num">1</span>
+        total <span class="hl opt">+=</span> distribution<span class="hl opt">[</span>i<span class="hl opt">]</span>
+    <span class="hl kwa">return</span> values<span class="hl opt">[</span>i<span class="hl opt">]</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">sampleFromCounter</span><span class="hl opt">(</span>ctr<span class="hl opt">):</span>
+    items <span class="hl opt">=</span> ctr<span class="hl opt">.</span><span class="hl kwd">items</span><span class="hl opt">()</span>
+    <span class="hl kwa">return</span> <span class="hl kwd">sample</span><span class="hl opt">([</span>v <span class="hl kwa">for</span> k<span class="hl opt">,</span>v <span class="hl kwa">in</span> items<span class="hl opt">], [</span>k <span class="hl kwa">for</span> k<span class="hl opt">,</span>v <span class="hl kwa">in</span> items<span class="hl opt">])</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">getProbability</span><span class="hl opt">(</span>value<span class="hl opt">,</span> distribution<span class="hl opt">,</span> values<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">      Gives the probability of a value under a discrete distribution</span>
+<span class="hl str">      defined by (distributions, values).</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    total <span class="hl opt">=</span> <span class="hl num">0.0</span>
+    <span class="hl kwa">for</span> prob<span class="hl opt">,</span> val <span class="hl kwa">in</span> <span class="hl kwb">zip</span><span class="hl opt">(</span>distribution<span class="hl opt">,</span> values<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> val <span class="hl opt">==</span> value<span class="hl opt">:</span>
+            total <span class="hl opt">+=</span> prob
+    <span class="hl kwa">return</span> total
+
+<span class="hl kwa">def</span> <span class="hl kwd">flipCoin</span><span class="hl opt">(</span> p <span class="hl opt">):</span>
+    r <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">random</span><span class="hl opt">()</span>
+    <span class="hl kwa">return</span> r <span class="hl opt">&lt;</span> p
+
+<span class="hl kwa">def</span> <span class="hl kwd">chooseFromDistribution</span><span class="hl opt">(</span> distribution <span class="hl opt">):</span>
+    <span class="hl str">&quot;Takes either a counter or a list of (prob, key) pairs and samples&quot;</span>
+    <span class="hl kwa">if</span> <span class="hl kwb">type</span><span class="hl opt">(</span>distribution<span class="hl opt">) ==</span> <span class="hl kwb">dict</span> <span class="hl kwa">or</span> <span class="hl kwb">type</span><span class="hl opt">(</span>distribution<span class="hl opt">) ==</span> Counter<span class="hl opt">:</span>
+        <span class="hl kwa">return</span> <span class="hl kwd">sample</span><span class="hl opt">(</span>distribution<span class="hl opt">)</span>
+    r <span class="hl opt">=</span> random<span class="hl opt">.</span><span class="hl kwd">random</span><span class="hl opt">()</span>
+    base <span class="hl opt">=</span> <span class="hl num">0.0</span>
+    <span class="hl kwa">for</span> prob<span class="hl opt">,</span> element <span class="hl kwa">in</span> distribution<span class="hl opt">:</span>
+        base <span class="hl opt">+=</span> prob
+        <span class="hl kwa">if</span> r <span class="hl opt">&lt;=</span> base<span class="hl opt">:</span> <span class="hl kwa">return</span> element
+
+<span class="hl kwa">def</span> <span class="hl kwd">nearestPoint</span><span class="hl opt">(</span> pos <span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Finds the nearest grid point to a position (discretizes).</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl opt">(</span> current_row<span class="hl opt">,</span> current_col <span class="hl opt">) =</span> pos
+
+    grid_row <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span> current_row <span class="hl opt">+</span> <span class="hl num">0.5</span> <span class="hl opt">)</span>
+    grid_col <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span> current_col <span class="hl opt">+</span> <span class="hl num">0.5</span> <span class="hl opt">)</span>
+    <span class="hl kwa">return</span> <span class="hl opt">(</span> grid_row<span class="hl opt">,</span> grid_col <span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">sign</span><span class="hl opt">(</span> x <span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Returns 1 or -1 depending on the sign of x</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">if</span><span class="hl opt">(</span> x <span class="hl opt">&gt;=</span> <span class="hl num">0</span> <span class="hl opt">):</span>
+        <span class="hl kwa">return</span> <span class="hl num">1</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        <span class="hl kwa">return</span> <span class="hl opt">-</span><span class="hl num">1</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">arrayInvert</span><span class="hl opt">(</span>array<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Inverts a matrix stored as a list of lists.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    result <span class="hl opt">= [[]</span> <span class="hl kwa">for</span> i <span class="hl kwa">in</span> array<span class="hl opt">]</span>
+    <span class="hl kwa">for</span> outer <span class="hl kwa">in</span> array<span class="hl opt">:</span>
+        <span class="hl kwa">for</span> inner <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span><span class="hl kwb">len</span><span class="hl opt">(</span>outer<span class="hl opt">)):</span>
+            result<span class="hl opt">[</span>inner<span class="hl opt">].</span><span class="hl kwd">append</span><span class="hl opt">(</span>outer<span class="hl opt">[</span>inner<span class="hl opt">])</span>
+    <span class="hl kwa">return</span> result
+
+<span class="hl kwa">def</span> <span class="hl kwd">matrixAsList</span><span class="hl opt">(</span> matrix<span class="hl opt">,</span> value <span class="hl opt">=</span> <span class="hl kwa">True</span> <span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Turns a matrix into a list of coordinates matching the specified value</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    rows<span class="hl opt">,</span> cols <span class="hl opt">=</span> <span class="hl kwb">len</span><span class="hl opt">(</span> matrix <span class="hl opt">),</span> <span class="hl kwb">len</span><span class="hl opt">(</span> matrix<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] )</span>
+    cells <span class="hl opt">= []</span>
+    <span class="hl kwa">for</span> row <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> rows <span class="hl opt">):</span>
+        <span class="hl kwa">for</span> col <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span> cols <span class="hl opt">):</span>
+            <span class="hl kwa">if</span> matrix<span class="hl opt">[</span>row<span class="hl opt">][</span>col<span class="hl opt">] ==</span> value<span class="hl opt">:</span>
+                cells<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span> row<span class="hl opt">,</span> col <span class="hl opt">) )</span>
+    <span class="hl kwa">return</span> cells
+
+<span class="hl kwa">def</span> <span class="hl kwd">lookup</span><span class="hl opt">(</span>name<span class="hl opt">,</span> namespace<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Get a method or class from any imported module from its name.</span>
+<span class="hl str">    Usage: lookup(functionName, globals())</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    dots <span class="hl opt">=</span> name<span class="hl opt">.</span><span class="hl kwd">count</span><span class="hl opt">(</span><span class="hl str">'.'</span><span class="hl opt">)</span>
+    <span class="hl kwa">if</span> dots <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+        moduleName<span class="hl opt">,</span> objName <span class="hl opt">=</span> <span class="hl str">'.'</span><span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">(</span>name<span class="hl opt">.</span><span class="hl kwd">split</span><span class="hl opt">(</span><span class="hl str">'.'</span><span class="hl opt">)[:-</span><span class="hl num">1</span><span class="hl opt">]),</span> name<span class="hl opt">.</span><span class="hl kwd">split</span><span class="hl opt">(</span><span class="hl str">'.'</span><span class="hl opt">)[-</span><span class="hl num">1</span><span class="hl opt">]</span>
+        module <span class="hl opt">=</span> <span class="hl kwb">__import__</span><span class="hl opt">(</span>moduleName<span class="hl opt">)</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">getattr</span><span class="hl opt">(</span>module<span class="hl opt">,</span> objName<span class="hl opt">)</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        modules <span class="hl opt">= [</span>obj <span class="hl kwa">for</span> obj <span class="hl kwa">in</span> namespace<span class="hl opt">.</span><span class="hl kwd">values</span><span class="hl opt">()</span> <span class="hl kwa">if</span> <span class="hl kwb">str</span><span class="hl opt">(</span><span class="hl kwb">type</span><span class="hl opt">(</span>obj<span class="hl opt">)) ==</span> <span class="hl str">&quot;&lt;type 'module'&gt;&quot;</span><span class="hl opt">]</span>
+        options <span class="hl opt">= [</span><span class="hl kwb">getattr</span><span class="hl opt">(</span>module<span class="hl opt">,</span> name<span class="hl opt">)</span> <span class="hl kwa">for</span> module <span class="hl kwa">in</span> modules <span class="hl kwa">if</span> name <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>module<span class="hl opt">)]</span>
+        options <span class="hl opt">+= [</span>obj<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span> <span class="hl kwa">for</span> obj <span class="hl kwa">in</span> namespace<span class="hl opt">.</span><span class="hl kwd">items</span><span class="hl opt">()</span> <span class="hl kwa">if</span> obj<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] ==</span> name <span class="hl opt">]</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>options<span class="hl opt">) ==</span> <span class="hl num">1</span><span class="hl opt">:</span> <span class="hl kwa">return</span> options<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>options<span class="hl opt">) &gt;</span> <span class="hl num">1</span><span class="hl opt">:</span> <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">,</span> <span class="hl str">'Name conflict for %s'</span>
+        <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">,</span> <span class="hl str">'%s not found as a method or class'</span> <span class="hl opt">%</span> name
+
+<span class="hl kwa">def</span> <span class="hl kwd">pause</span><span class="hl opt">():</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Pauses the output stream awaiting user feedback.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">print</span> <span class="hl str">&quot;&lt;Press enter/return to continue&gt;&quot;</span>
+    <span class="hl kwb">raw_input</span><span class="hl opt">()</span>
+
+
+<span class="hl slc"># code to handle timeouts</span>
+<span class="hl slc">#</span>
+<span class="hl slc"># FIXME</span>
+<span class="hl slc"># NOTE: TimeoutFuncton is NOT reentrant.  Later timeouts will silently </span>
+<span class="hl slc"># disable earlier timeouts.  Could be solved by maintaining a global list </span>
+<span class="hl slc"># of active time outs.  Currently, questions which have test cases calling </span>
+<span class="hl slc"># this have all student code so wrapped.</span>
+<span class="hl slc">#</span>
+<span class="hl kwa">import</span> signal
+<span class="hl kwa">import</span> time
+<span class="hl kwa">class</span> <span class="hl kwd">TimeoutFunctionException</span><span class="hl opt">(</span><span class="hl kwc">Exception</span><span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;Exception to raise on a timeout&quot;&quot;&quot;</span>
+    <span class="hl kwa">pass</span>
+
+
+<span class="hl kwa">class</span> TimeoutFunction<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> function<span class="hl opt">,</span> timeout<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>timeout <span class="hl opt">=</span> timeout
+        self<span class="hl opt">.</span>function <span class="hl opt">=</span> function
+
+    <span class="hl kwa">def</span> <span class="hl kwd">handle_timeout</span><span class="hl opt">(</span>self<span class="hl opt">,</span> signum<span class="hl opt">,</span> frame<span class="hl opt">):</span>
+        <span class="hl kwa">raise</span> <span class="hl kwd">TimeoutFunctionException</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__call__</span><span class="hl opt">(</span>self<span class="hl opt">, *</span>args<span class="hl opt">, **</span>keyArgs<span class="hl opt">):</span>
+        <span class="hl slc"># If we have SIGALRM signal, use it to cause an exception if and</span>
+        <span class="hl slc"># when this function runs too long.  Otherwise check the time taken</span>
+        <span class="hl slc"># after the method has returned, and throw an exception then.</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">hasattr</span><span class="hl opt">(</span>signal<span class="hl opt">,</span> <span class="hl str">'SIGALRM'</span><span class="hl opt">):</span>
+            old <span class="hl opt">=</span> signal<span class="hl opt">.</span><span class="hl kwd">signal</span><span class="hl opt">(</span>signal<span class="hl opt">.</span>SIGALRM<span class="hl opt">,</span> self<span class="hl opt">.</span>handle_timeout<span class="hl opt">)</span>
+            signal<span class="hl opt">.</span><span class="hl kwd">alarm</span><span class="hl opt">(</span>self<span class="hl opt">.</span>timeout<span class="hl opt">)</span>
+            <span class="hl kwa">try</span><span class="hl opt">:</span>
+                result <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">function</span><span class="hl opt">(*</span>args<span class="hl opt">, **</span>keyArgs<span class="hl opt">)</span>
+            <span class="hl kwa">finally</span><span class="hl opt">:</span>
+                signal<span class="hl opt">.</span><span class="hl kwd">signal</span><span class="hl opt">(</span>signal<span class="hl opt">.</span>SIGALRM<span class="hl opt">,</span> old<span class="hl opt">)</span>
+            signal<span class="hl opt">.</span><span class="hl kwd">alarm</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            startTime <span class="hl opt">=</span> time<span class="hl opt">.</span><span class="hl kwd">time</span><span class="hl opt">()</span>
+            result <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">function</span><span class="hl opt">(*</span>args<span class="hl opt">, **</span>keyArgs<span class="hl opt">)</span>
+            timeElapsed <span class="hl opt">=</span> time<span class="hl opt">.</span><span class="hl kwd">time</span><span class="hl opt">() -</span> startTime
+            <span class="hl kwa">if</span> timeElapsed <span class="hl opt">&gt;=</span> self<span class="hl opt">.</span>timeout<span class="hl opt">:</span>
+                self<span class="hl opt">.</span><span class="hl kwd">handle_timeout</span><span class="hl opt">(</span><span class="hl kwa">None</span><span class="hl opt">,</span> <span class="hl kwa">None</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> result
+
+
+
+_ORIGINAL_STDOUT <span class="hl opt">=</span> <span class="hl kwa">None</span>
+_ORIGINAL_STDERR <span class="hl opt">=</span> <span class="hl kwa">None</span>
+_MUTED <span class="hl opt">=</span> <span class="hl kwa">False</span>
+
+<span class="hl kwa">class</span> WritableNull<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">write</span><span class="hl opt">(</span>self<span class="hl opt">,</span> string<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+ 
+<span class="hl kwa">def</span> <span class="hl kwd">mutePrint</span><span class="hl opt">():</span>
+    <span class="hl kwa">global</span> _ORIGINAL_STDOUT<span class="hl opt">,</span> _ORIGINAL_STDERR<span class="hl opt">,</span> _MUTED
+    <span class="hl kwa">if</span> _MUTED<span class="hl opt">:</span> 
+        <span class="hl kwa">return</span>
+    _MUTED <span class="hl opt">=</span> <span class="hl kwa">True</span>
+    
+    _ORIGINAL_STDOUT <span class="hl opt">=</span> sys<span class="hl opt">.</span>stdout
+    <span class="hl slc">#_ORIGINAL_STDERR = sys.stderr</span>
+    sys<span class="hl opt">.</span>stdout <span class="hl opt">=</span> <span class="hl kwd">WritableNull</span><span class="hl opt">()</span>
+    <span class="hl slc">#sys.stderr = WritableNull()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">unmutePrint</span><span class="hl opt">():</span>
+    <span class="hl kwa">global</span> _ORIGINAL_STDOUT<span class="hl opt">,</span> _ORIGINAL_STDERR<span class="hl opt">,</span> _MUTED
+    <span class="hl kwa">if not</span> _MUTED<span class="hl opt">:</span> 
+        <span class="hl kwa">return</span>
+    _MUTED <span class="hl opt">=</span> <span class="hl kwa">False</span>
+    
+    sys<span class="hl opt">.</span>stdout <span class="hl opt">=</span> _ORIGINAL_STDOUT
+    <span class="hl slc">#sys.stderr = _ORIGINAL_STDERR</span>
+    
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

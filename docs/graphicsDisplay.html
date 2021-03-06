@@ -1,0 +1,682 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>graphicsDisplay.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># graphicsDisplay.py</span>
+<span class="hl slc"># ------------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">from</span> graphicsUtils <span class="hl kwa">import</span> <span class="hl opt">*</span>
+<span class="hl kwa">import</span> math<span class="hl opt">,</span> time
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Directions
+
+<span class="hl slc">###########################</span>
+<span class="hl slc">#  GRAPHICS DISPLAY CODE  #</span>
+<span class="hl slc">###########################</span>
+
+<span class="hl slc"># Most code by Dan Klein and John Denero written or rewritten for cs188, UC Berkeley.</span>
+<span class="hl slc"># Some code from a Pacman implementation by LiveWires, and used / modified with permission.</span>
+
+DEFAULT_GRID_SIZE <span class="hl opt">=</span> <span class="hl num">30.0</span>
+INFO_PANE_HEIGHT <span class="hl opt">=</span> <span class="hl num">35</span>
+BACKGROUND_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">)</span>
+WALL_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0.0</span><span class="hl opt">/</span><span class="hl num">255.0</span><span class="hl opt">,</span> <span class="hl num">51.0</span><span class="hl opt">/</span><span class="hl num">255.0</span><span class="hl opt">,</span> <span class="hl num">255.0</span><span class="hl opt">/</span><span class="hl num">255.0</span><span class="hl opt">)</span>
+INFO_PANE_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">.4</span><span class="hl opt">,</span><span class="hl num">.4</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">)</span>
+SCORE_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">.9</span><span class="hl opt">,</span> <span class="hl num">.9</span><span class="hl opt">,</span> <span class="hl num">.9</span><span class="hl opt">)</span>
+PACMAN_OUTLINE_WIDTH <span class="hl opt">=</span> <span class="hl num">2</span>
+PACMAN_CAPTURE_OUTLINE_WIDTH <span class="hl opt">=</span> <span class="hl num">4</span>
+
+GHOST_COLORS <span class="hl opt">= []</span>
+GHOST_COLORS<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">.9</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">))</span> <span class="hl slc"># Red</span>
+GHOST_COLORS<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">.3</span><span class="hl opt">,</span><span class="hl num">.9</span><span class="hl opt">))</span> <span class="hl slc"># Blue</span>
+GHOST_COLORS<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">.98</span><span class="hl opt">,</span><span class="hl num">.41</span><span class="hl opt">,</span><span class="hl num">.07</span><span class="hl opt">))</span> <span class="hl slc"># Orange</span>
+GHOST_COLORS<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">.1</span><span class="hl opt">,</span><span class="hl num">.75</span><span class="hl opt">,</span><span class="hl num">.7</span><span class="hl opt">))</span> <span class="hl slc"># Green</span>
+GHOST_COLORS<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1.0</span><span class="hl opt">,</span><span class="hl num">0.6</span><span class="hl opt">,</span><span class="hl num">0.0</span><span class="hl opt">))</span> <span class="hl slc"># Yellow</span>
+GHOST_COLORS<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">.4</span><span class="hl opt">,</span><span class="hl num">0.13</span><span class="hl opt">,</span><span class="hl num">0.91</span><span class="hl opt">))</span> <span class="hl slc"># Purple</span>
+
+TEAM_COLORS <span class="hl opt">=</span> GHOST_COLORS<span class="hl opt">[:</span><span class="hl num">2</span><span class="hl opt">]</span>
+
+GHOST_SHAPE <span class="hl opt">= [</span>
+    <span class="hl opt">(</span> <span class="hl num">0</span><span class="hl opt">,</span>    <span class="hl num">0.3</span> <span class="hl opt">),</span>
+    <span class="hl opt">(</span> <span class="hl num">0.25</span><span class="hl opt">,</span> <span class="hl num">0.75</span> <span class="hl opt">),</span>
+    <span class="hl opt">(</span> <span class="hl num">0.5</span><span class="hl opt">,</span>  <span class="hl num">0.3</span> <span class="hl opt">),</span>
+    <span class="hl opt">(</span> <span class="hl num">0.75</span><span class="hl opt">,</span> <span class="hl num">0.75</span> <span class="hl opt">),</span>
+    <span class="hl opt">(</span> <span class="hl num">0.75</span><span class="hl opt">, -</span><span class="hl num">0.5</span> <span class="hl opt">),</span>
+    <span class="hl opt">(</span> <span class="hl num">0.5</span><span class="hl opt">,  -</span><span class="hl num">0.75</span> <span class="hl opt">),</span>
+    <span class="hl opt">(-</span><span class="hl num">0.5</span><span class="hl opt">,  -</span><span class="hl num">0.75</span> <span class="hl opt">),</span>
+    <span class="hl opt">(-</span><span class="hl num">0.75</span><span class="hl opt">, -</span><span class="hl num">0.5</span> <span class="hl opt">),</span>
+    <span class="hl opt">(-</span><span class="hl num">0.75</span><span class="hl opt">,</span> <span class="hl num">0.75</span> <span class="hl opt">),</span>
+    <span class="hl opt">(-</span><span class="hl num">0.5</span><span class="hl opt">,</span>  <span class="hl num">0.3</span> <span class="hl opt">),</span>
+    <span class="hl opt">(-</span><span class="hl num">0.25</span><span class="hl opt">,</span> <span class="hl num">0.75</span> <span class="hl opt">)</span>
+  <span class="hl opt">]</span>
+GHOST_SIZE <span class="hl opt">=</span> <span class="hl num">0.65</span>
+SCARED_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">)</span>
+
+GHOST_VEC_COLORS <span class="hl opt">=</span> <span class="hl kwb">map</span><span class="hl opt">(</span>colorToVector<span class="hl opt">,</span> GHOST_COLORS<span class="hl opt">)</span>
+
+PACMAN_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">255.0</span><span class="hl opt">/</span><span class="hl num">255.0</span><span class="hl opt">,</span><span class="hl num">255.0</span><span class="hl opt">/</span><span class="hl num">255.0</span><span class="hl opt">,</span><span class="hl num">61.0</span><span class="hl opt">/</span><span class="hl num">255</span><span class="hl opt">)</span>
+PACMAN_SCALE <span class="hl opt">=</span> <span class="hl num">0.5</span>
+<span class="hl slc">#pacman_speed = 0.25</span>
+
+<span class="hl slc"># Food</span>
+FOOD_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">)</span>
+FOOD_SIZE <span class="hl opt">=</span> <span class="hl num">0.1</span>
+
+<span class="hl slc"># Laser</span>
+LASER_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">)</span>
+LASER_SIZE <span class="hl opt">=</span> <span class="hl num">0.02</span>
+
+<span class="hl slc"># Capsule graphics</span>
+CAPSULE_COLOR <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">)</span>
+CAPSULE_SIZE <span class="hl opt">=</span> <span class="hl num">0.25</span>
+
+<span class="hl slc"># Drawing walls</span>
+WALL_RADIUS <span class="hl opt">=</span> <span class="hl num">0.15</span>
+
+<span class="hl kwa">class</span> InfoPane<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> layout<span class="hl opt">,</span> gridSize<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>gridSize <span class="hl opt">=</span> gridSize
+        self<span class="hl opt">.</span>width <span class="hl opt">= (</span>layout<span class="hl opt">.</span>width<span class="hl opt">) *</span> gridSize
+        self<span class="hl opt">.</span>base <span class="hl opt">= (</span>layout<span class="hl opt">.</span>height <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">) *</span> gridSize
+        self<span class="hl opt">.</span>height <span class="hl opt">=</span> INFO_PANE_HEIGHT
+        self<span class="hl opt">.</span>fontSize <span class="hl opt">=</span> <span class="hl num">24</span>
+        self<span class="hl opt">.</span>textColor <span class="hl opt">=</span> PACMAN_COLOR
+        self<span class="hl opt">.</span><span class="hl kwd">drawPane</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">toScreen</span><span class="hl opt">(</span>self<span class="hl opt">,</span> pos<span class="hl opt">,</span> y <span class="hl opt">=</span> <span class="hl kwa">None</span><span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Translates a point relative from the bottom left of the info pane.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> y <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            x<span class="hl opt">,</span>y <span class="hl opt">=</span> pos
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            x <span class="hl opt">=</span> pos
+
+        x <span class="hl opt">=</span> self<span class="hl opt">.</span>gridSize <span class="hl opt">+</span> x <span class="hl slc"># Margin</span>
+        y <span class="hl opt">=</span> self<span class="hl opt">.</span>base <span class="hl opt">+</span> y
+        <span class="hl kwa">return</span> x<span class="hl opt">,</span>y
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawPane</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>scoreText <span class="hl opt">=</span> <span class="hl kwd">text</span><span class="hl opt">(</span> self<span class="hl opt">.</span><span class="hl kwd">toScreen</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span>  <span class="hl opt">),</span> self<span class="hl opt">.</span>textColor<span class="hl opt">,</span> <span class="hl str">&quot;SCORE:    0&quot;</span><span class="hl opt">,</span> <span class="hl str">&quot;Times&quot;</span><span class="hl opt">,</span> self<span class="hl opt">.</span>fontSize<span class="hl opt">,</span> <span class="hl str">&quot;bold&quot;</span><span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">initializeGhostDistances</span><span class="hl opt">(</span>self<span class="hl opt">,</span> distances<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>ghostDistanceText <span class="hl opt">= []</span>
+
+        size <span class="hl opt">=</span> <span class="hl num">20</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>width <span class="hl opt">&lt;</span> <span class="hl num">240</span><span class="hl opt">:</span>
+            size <span class="hl opt">=</span> <span class="hl num">12</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>width <span class="hl opt">&lt;</span> <span class="hl num">160</span><span class="hl opt">:</span>
+            size <span class="hl opt">=</span> <span class="hl num">10</span>
+
+        <span class="hl kwa">for</span> i<span class="hl opt">,</span> d <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>distances<span class="hl opt">):</span>
+            t <span class="hl opt">=</span> <span class="hl kwd">text</span><span class="hl opt">(</span> self<span class="hl opt">.</span><span class="hl kwd">toScreen</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">/</span><span class="hl num">2</span> <span class="hl opt">+</span> self<span class="hl opt">.</span>width<span class="hl opt">/</span><span class="hl num">8</span> <span class="hl opt">*</span> i<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">),</span> GHOST_COLORS<span class="hl opt">[</span>i<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">],</span> d<span class="hl opt">,</span> <span class="hl str">&quot;Times&quot;</span><span class="hl opt">,</span> size<span class="hl opt">,</span> <span class="hl str">&quot;bold&quot;</span><span class="hl opt">)</span>
+            self<span class="hl opt">.</span>ghostDistanceText<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>t<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">updateScore</span><span class="hl opt">(</span>self<span class="hl opt">,</span> score<span class="hl opt">):</span>
+        <span class="hl kwd">changeText</span><span class="hl opt">(</span>self<span class="hl opt">.</span>scoreText<span class="hl opt">,</span> <span class="hl str">&quot;SCORE: % 4d&quot;</span> <span class="hl opt">%</span> score<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">setTeam</span><span class="hl opt">(</span>self<span class="hl opt">,</span> isBlue<span class="hl opt">):</span>
+        text <span class="hl opt">=</span> <span class="hl str">&quot;RED TEAM&quot;</span>
+        <span class="hl kwa">if</span> isBlue<span class="hl opt">:</span> text <span class="hl opt">=</span> <span class="hl str">&quot;BLUE TEAM&quot;</span>
+        self<span class="hl opt">.</span>teamText <span class="hl opt">=</span> <span class="hl kwd">text</span><span class="hl opt">(</span> self<span class="hl opt">.</span><span class="hl kwd">toScreen</span><span class="hl opt">(</span><span class="hl num">300</span><span class="hl opt">,</span> <span class="hl num">0</span>  <span class="hl opt">),</span> self<span class="hl opt">.</span>textColor<span class="hl opt">,</span> text<span class="hl opt">,</span> <span class="hl str">&quot;Times&quot;</span><span class="hl opt">,</span> self<span class="hl opt">.</span>fontSize<span class="hl opt">,</span> <span class="hl str">&quot;bold&quot;</span><span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">updateGhostDistances</span><span class="hl opt">(</span>self<span class="hl opt">,</span> distances<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>distances<span class="hl opt">) ==</span> <span class="hl num">0</span><span class="hl opt">:</span> <span class="hl kwa">return</span>
+        <span class="hl kwa">if</span> <span class="hl str">'ghostDistanceText'</span> <span class="hl kwa">not in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>self<span class="hl opt">):</span> self<span class="hl opt">.</span><span class="hl kwd">initializeGhostDistances</span><span class="hl opt">(</span>distances<span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">for</span> i<span class="hl opt">,</span> d <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>distances<span class="hl opt">):</span>
+                <span class="hl kwd">changeText</span><span class="hl opt">(</span>self<span class="hl opt">.</span>ghostDistanceText<span class="hl opt">[</span>i<span class="hl opt">],</span> d<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawGhost</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawPacman</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawWarning</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">clearIcon</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">updateMessage</span><span class="hl opt">(</span>self<span class="hl opt">,</span> message<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">clearMessage</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">pass</span>
+
+
+<span class="hl kwa">class</span> PacmanGraphics<span class="hl opt">:</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> zoom<span class="hl opt">=</span><span class="hl num">1.0</span><span class="hl opt">,</span> frameTime<span class="hl opt">=</span><span class="hl num">0.0</span><span class="hl opt">,</span> capture<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">):</span>
+        self<span class="hl opt">.</span>have_window <span class="hl opt">=</span> <span class="hl num">0</span>
+        self<span class="hl opt">.</span>currentGhostImages <span class="hl opt">= {}</span>
+        self<span class="hl opt">.</span>pacmanImage <span class="hl opt">=</span> <span class="hl kwa">None</span>
+        self<span class="hl opt">.</span>zoom <span class="hl opt">=</span> zoom
+        self<span class="hl opt">.</span>gridSize <span class="hl opt">=</span> DEFAULT_GRID_SIZE <span class="hl opt">*</span> zoom
+        self<span class="hl opt">.</span>capture <span class="hl opt">=</span> capture
+        self<span class="hl opt">.</span>frameTime <span class="hl opt">=</span> frameTime
+
+    <span class="hl kwa">def</span> <span class="hl kwd">initialize</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">,</span> isBlue <span class="hl opt">=</span> <span class="hl kwa">False</span><span class="hl opt">):</span>
+        self<span class="hl opt">.</span>isBlue <span class="hl opt">=</span> isBlue
+        self<span class="hl opt">.</span><span class="hl kwd">startGraphics</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+
+        <span class="hl slc"># self.drawDistributions(state)</span>
+        self<span class="hl opt">.</span>distributionImages <span class="hl opt">=</span> <span class="hl kwa">None</span>  <span class="hl slc"># Initialized lazily</span>
+        self<span class="hl opt">.</span><span class="hl kwd">drawStaticObjects</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+        self<span class="hl opt">.</span><span class="hl kwd">drawAgentObjects</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+
+        <span class="hl slc"># Information</span>
+        self<span class="hl opt">.</span>previousState <span class="hl opt">=</span> state
+
+    <span class="hl kwa">def</span> <span class="hl kwd">startGraphics</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>layout <span class="hl opt">=</span> state<span class="hl opt">.</span>layout
+        layout <span class="hl opt">=</span> self<span class="hl opt">.</span>layout
+        self<span class="hl opt">.</span>width <span class="hl opt">=</span> layout<span class="hl opt">.</span>width
+        self<span class="hl opt">.</span>height <span class="hl opt">=</span> layout<span class="hl opt">.</span>height
+        self<span class="hl opt">.</span><span class="hl kwd">make_window</span><span class="hl opt">(</span>self<span class="hl opt">.</span>width<span class="hl opt">,</span> self<span class="hl opt">.</span>height<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>infoPane <span class="hl opt">=</span> <span class="hl kwd">InfoPane</span><span class="hl opt">(</span>layout<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>currentState <span class="hl opt">=</span> layout
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawDistributions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        walls <span class="hl opt">=</span> state<span class="hl opt">.</span>layout<span class="hl opt">.</span>walls
+        dist <span class="hl opt">= []</span>
+        <span class="hl kwa">for</span> x <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>walls<span class="hl opt">.</span>width<span class="hl opt">):</span>
+            distx <span class="hl opt">= []</span>
+            dist<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>distx<span class="hl opt">)</span>
+            <span class="hl kwa">for</span> y <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span>walls<span class="hl opt">.</span>height<span class="hl opt">):</span>
+                <span class="hl opt">(</span> screen_x<span class="hl opt">,</span> screen_y <span class="hl opt">) =</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">( (</span>x<span class="hl opt">,</span> y<span class="hl opt">) )</span>
+                block <span class="hl opt">=</span> <span class="hl kwd">square</span><span class="hl opt">( (</span>screen_x<span class="hl opt">,</span> screen_y<span class="hl opt">),</span>
+                                <span class="hl num">0.5</span> <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span>
+                                color <span class="hl opt">=</span> BACKGROUND_COLOR<span class="hl opt">,</span>
+                                filled <span class="hl opt">=</span> <span class="hl num">1</span><span class="hl opt">,</span> behind<span class="hl opt">=</span><span class="hl num">2</span><span class="hl opt">)</span>
+                distx<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>block<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>distributionImages <span class="hl opt">=</span> dist
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawStaticObjects</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        layout <span class="hl opt">=</span> self<span class="hl opt">.</span>layout
+        self<span class="hl opt">.</span><span class="hl kwd">drawWalls</span><span class="hl opt">(</span>layout<span class="hl opt">.</span>walls<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>food <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">drawFood</span><span class="hl opt">(</span>layout<span class="hl opt">.</span>food<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>capsules <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">drawCapsules</span><span class="hl opt">(</span>layout<span class="hl opt">.</span>capsules<span class="hl opt">)</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawAgentObjects</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>agentImages <span class="hl opt">= []</span> <span class="hl slc"># (agentState, image)</span>
+        <span class="hl kwa">for</span> index<span class="hl opt">,</span> agent <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>state<span class="hl opt">.</span>agentStates<span class="hl opt">):</span>
+            <span class="hl kwa">if</span> agent<span class="hl opt">.</span>isPacman<span class="hl opt">:</span>
+                image <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">drawPacman</span><span class="hl opt">(</span>agent<span class="hl opt">,</span> index<span class="hl opt">)</span>
+                self<span class="hl opt">.</span>agentImages<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span>agent<span class="hl opt">,</span> image<span class="hl opt">) )</span>
+            <span class="hl kwa">else</span><span class="hl opt">:</span>
+                image <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">drawGhost</span><span class="hl opt">(</span>agent<span class="hl opt">,</span> index<span class="hl opt">)</span>
+                self<span class="hl opt">.</span>agentImages<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span>agent<span class="hl opt">,</span> image<span class="hl opt">) )</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">swapImages</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentIndex<span class="hl opt">,</span> newState<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">          Changes an image from a ghost to a pacman or vis versa (for capture)</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        prevState<span class="hl opt">,</span> prevImage <span class="hl opt">=</span> self<span class="hl opt">.</span>agentImages<span class="hl opt">[</span>agentIndex<span class="hl opt">]</span>
+        <span class="hl kwa">for</span> item <span class="hl kwa">in</span> prevImage<span class="hl opt">:</span> <span class="hl kwd">remove_from_screen</span><span class="hl opt">(</span>item<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> newState<span class="hl opt">.</span>isPacman<span class="hl opt">:</span>
+            image <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">drawPacman</span><span class="hl opt">(</span>newState<span class="hl opt">,</span> agentIndex<span class="hl opt">)</span>
+            self<span class="hl opt">.</span>agentImages<span class="hl opt">[</span>agentIndex<span class="hl opt">] = (</span>newState<span class="hl opt">,</span> image <span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            image <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">drawGhost</span><span class="hl opt">(</span>newState<span class="hl opt">,</span> agentIndex<span class="hl opt">)</span>
+            self<span class="hl opt">.</span>agentImages<span class="hl opt">[</span>agentIndex<span class="hl opt">] = (</span>newState<span class="hl opt">,</span> image <span class="hl opt">)</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">update</span><span class="hl opt">(</span>self<span class="hl opt">,</span> newState<span class="hl opt">):</span>
+        agentIndex <span class="hl opt">=</span> newState<span class="hl opt">.</span>_agentMoved
+        agentState <span class="hl opt">=</span> newState<span class="hl opt">.</span>agentStates<span class="hl opt">[</span>agentIndex<span class="hl opt">]</span>
+
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>agentImages<span class="hl opt">[</span>agentIndex<span class="hl opt">][</span><span class="hl num">0</span><span class="hl opt">].</span>isPacman <span class="hl opt">!=</span> agentState<span class="hl opt">.</span>isPacman<span class="hl opt">:</span> self<span class="hl opt">.</span><span class="hl kwd">swapImages</span><span class="hl opt">(</span>agentIndex<span class="hl opt">,</span> agentState<span class="hl opt">)</span>
+        prevState<span class="hl opt">,</span> prevImage <span class="hl opt">=</span> self<span class="hl opt">.</span>agentImages<span class="hl opt">[</span>agentIndex<span class="hl opt">]</span>
+        <span class="hl kwa">if</span> agentState<span class="hl opt">.</span>isPacman<span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">animatePacman</span><span class="hl opt">(</span>agentState<span class="hl opt">,</span> prevState<span class="hl opt">,</span> prevImage<span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">moveGhost</span><span class="hl opt">(</span>agentState<span class="hl opt">,</span> agentIndex<span class="hl opt">,</span> prevState<span class="hl opt">,</span> prevImage<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>agentImages<span class="hl opt">[</span>agentIndex<span class="hl opt">] = (</span>agentState<span class="hl opt">,</span> prevImage<span class="hl opt">)</span>
+
+        <span class="hl kwa">if</span> newState<span class="hl opt">.</span>_foodEaten <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">removeFood</span><span class="hl opt">(</span>newState<span class="hl opt">.</span>_foodEaten<span class="hl opt">,</span> self<span class="hl opt">.</span>food<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> newState<span class="hl opt">.</span>_capsuleEaten <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">removeCapsule</span><span class="hl opt">(</span>newState<span class="hl opt">.</span>_capsuleEaten<span class="hl opt">,</span> self<span class="hl opt">.</span>capsules<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>infoPane<span class="hl opt">.</span><span class="hl kwd">updateScore</span><span class="hl opt">(</span>newState<span class="hl opt">.</span>score<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> <span class="hl str">'ghostDistances'</span> <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>newState<span class="hl opt">):</span>
+            self<span class="hl opt">.</span>infoPane<span class="hl opt">.</span><span class="hl kwd">updateGhostDistances</span><span class="hl opt">(</span>newState<span class="hl opt">.</span>ghostDistances<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">make_window</span><span class="hl opt">(</span>self<span class="hl opt">,</span> width<span class="hl opt">,</span> height<span class="hl opt">):</span>
+        grid_width <span class="hl opt">= (</span>width<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">) *</span> self<span class="hl opt">.</span>gridSize
+        grid_height <span class="hl opt">= (</span>height<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">) *</span> self<span class="hl opt">.</span>gridSize
+        screen_width <span class="hl opt">=</span> <span class="hl num">2</span><span class="hl opt">*</span>self<span class="hl opt">.</span>gridSize <span class="hl opt">+</span> grid_width
+        screen_height <span class="hl opt">=</span> <span class="hl num">2</span><span class="hl opt">*</span>self<span class="hl opt">.</span>gridSize <span class="hl opt">+</span> grid_height <span class="hl opt">+</span> INFO_PANE_HEIGHT
+
+        <span class="hl kwd">begin_graphics</span><span class="hl opt">(</span>screen_width<span class="hl opt">,</span>
+                       screen_height<span class="hl opt">,</span>
+                       BACKGROUND_COLOR<span class="hl opt">,</span>
+                       <span class="hl str">&quot;CS188 Pacman&quot;</span><span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawPacman</span><span class="hl opt">(</span>self<span class="hl opt">,</span> pacman<span class="hl opt">,</span> index<span class="hl opt">):</span>
+        position <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>pacman<span class="hl opt">)</span>
+        screen_point <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>position<span class="hl opt">)</span>
+        endpoints <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getEndpoints</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">(</span>pacman<span class="hl opt">))</span>
+
+        width <span class="hl opt">=</span> PACMAN_OUTLINE_WIDTH
+        outlineColor <span class="hl opt">=</span> PACMAN_COLOR
+        fillColor <span class="hl opt">=</span> PACMAN_COLOR
+
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>capture<span class="hl opt">:</span>
+            outlineColor <span class="hl opt">=</span> TEAM_COLORS<span class="hl opt">[</span>index <span class="hl opt">%</span> <span class="hl num">2</span><span class="hl opt">]</span>
+            fillColor <span class="hl opt">=</span> GHOST_COLORS<span class="hl opt">[</span>index<span class="hl opt">]</span>
+            width <span class="hl opt">=</span> PACMAN_CAPTURE_OUTLINE_WIDTH
+
+        <span class="hl kwa">return</span> <span class="hl opt">[</span><span class="hl kwd">circle</span><span class="hl opt">(</span>screen_point<span class="hl opt">,</span> PACMAN_SCALE <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span>
+                       fillColor <span class="hl opt">=</span> fillColor<span class="hl opt">,</span> outlineColor <span class="hl opt">=</span> outlineColor<span class="hl opt">,</span>
+                       endpoints <span class="hl opt">=</span> endpoints<span class="hl opt">,</span>
+                       width <span class="hl opt">=</span> width<span class="hl opt">)]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getEndpoints</span><span class="hl opt">(</span>self<span class="hl opt">,</span> direction<span class="hl opt">,</span> position<span class="hl opt">=(</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">)):</span>
+        x<span class="hl opt">,</span> y <span class="hl opt">=</span> position
+        pos <span class="hl opt">=</span> x <span class="hl opt">-</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x<span class="hl opt">) +</span> y <span class="hl opt">-</span> <span class="hl kwb">int</span><span class="hl opt">(</span>y<span class="hl opt">)</span>
+        width <span class="hl opt">=</span> <span class="hl num">30</span> <span class="hl opt">+</span> <span class="hl num">80</span> <span class="hl opt">*</span> math<span class="hl opt">.</span><span class="hl kwd">sin</span><span class="hl opt">(</span>math<span class="hl opt">.</span>pi<span class="hl opt">*</span> pos<span class="hl opt">)</span>
+
+        delta <span class="hl opt">=</span> width <span class="hl opt">/</span> <span class="hl num">2</span>
+        <span class="hl kwa">if</span> <span class="hl opt">(</span>direction <span class="hl opt">==</span> <span class="hl str">'West'</span><span class="hl opt">):</span>
+            endpoints <span class="hl opt">= (</span><span class="hl num">180</span><span class="hl opt">+</span>delta<span class="hl opt">,</span> <span class="hl num">180</span><span class="hl opt">-</span>delta<span class="hl opt">)</span>
+        <span class="hl kwa">elif</span> <span class="hl opt">(</span>direction <span class="hl opt">==</span> <span class="hl str">'North'</span><span class="hl opt">):</span>
+            endpoints <span class="hl opt">= (</span><span class="hl num">90</span><span class="hl opt">+</span>delta<span class="hl opt">,</span> <span class="hl num">90</span><span class="hl opt">-</span>delta<span class="hl opt">)</span>
+        <span class="hl kwa">elif</span> <span class="hl opt">(</span>direction <span class="hl opt">==</span> <span class="hl str">'South'</span><span class="hl opt">):</span>
+            endpoints <span class="hl opt">= (</span><span class="hl num">270</span><span class="hl opt">+</span>delta<span class="hl opt">,</span> <span class="hl num">270</span><span class="hl opt">-</span>delta<span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            endpoints <span class="hl opt">= (</span><span class="hl num">0</span><span class="hl opt">+</span>delta<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">-</span>delta<span class="hl opt">)</span>
+        <span class="hl kwa">return</span> endpoints
+
+    <span class="hl kwa">def</span> <span class="hl kwd">movePacman</span><span class="hl opt">(</span>self<span class="hl opt">,</span> position<span class="hl opt">,</span> direction<span class="hl opt">,</span> image<span class="hl opt">):</span>
+        screenPosition <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>position<span class="hl opt">)</span>
+        endpoints <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getEndpoints</span><span class="hl opt">(</span> direction<span class="hl opt">,</span> position <span class="hl opt">)</span>
+        r <span class="hl opt">=</span> PACMAN_SCALE <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize
+        <span class="hl kwd">moveCircle</span><span class="hl opt">(</span>image<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> screenPosition<span class="hl opt">,</span> r<span class="hl opt">,</span> endpoints<span class="hl opt">)</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">animatePacman</span><span class="hl opt">(</span>self<span class="hl opt">,</span> pacman<span class="hl opt">,</span> prevPacman<span class="hl opt">,</span> image<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>frameTime <span class="hl opt">&lt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">print</span> <span class="hl str">'Press any key to step forward, &quot;q&quot; to play'</span>
+            keys <span class="hl opt">=</span> <span class="hl kwd">wait_for_keys</span><span class="hl opt">()</span>
+            <span class="hl kwa">if</span> <span class="hl str">'q'</span> <span class="hl kwa">in</span> keys<span class="hl opt">:</span>
+                self<span class="hl opt">.</span>frameTime <span class="hl opt">=</span> <span class="hl num">0.1</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>frameTime <span class="hl opt">&gt;</span> <span class="hl num">0.01</span> <span class="hl kwa">or</span> self<span class="hl opt">.</span>frameTime <span class="hl opt">&lt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            start <span class="hl opt">=</span> time<span class="hl opt">.</span><span class="hl kwd">time</span><span class="hl opt">()</span>
+            fx<span class="hl opt">,</span> fy <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>prevPacman<span class="hl opt">)</span>
+            px<span class="hl opt">,</span> py <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>pacman<span class="hl opt">)</span>
+            frames <span class="hl opt">=</span> <span class="hl num">4.0</span>
+            <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl kwb">int</span><span class="hl opt">(</span>frames<span class="hl opt">) +</span> <span class="hl num">1</span><span class="hl opt">):</span>
+                pos <span class="hl opt">=</span> px<span class="hl opt">*</span>i<span class="hl opt">/</span>frames <span class="hl opt">+</span> fx<span class="hl opt">*(</span>frames<span class="hl opt">-</span>i<span class="hl opt">)/</span>frames<span class="hl opt">,</span> py<span class="hl opt">*</span>i<span class="hl opt">/</span>frames <span class="hl opt">+</span> fy<span class="hl opt">*(</span>frames<span class="hl opt">-</span>i<span class="hl opt">)/</span>frames
+                self<span class="hl opt">.</span><span class="hl kwd">movePacman</span><span class="hl opt">(</span>pos<span class="hl opt">,</span> self<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">(</span>pacman<span class="hl opt">),</span> image<span class="hl opt">)</span>
+                <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+                <span class="hl kwd">sleep</span><span class="hl opt">(</span><span class="hl kwb">abs</span><span class="hl opt">(</span>self<span class="hl opt">.</span>frameTime<span class="hl opt">) /</span> frames<span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">movePacman</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>pacman<span class="hl opt">),</span> self<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">(</span>pacman<span class="hl opt">),</span> image<span class="hl opt">)</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getGhostColor</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghost<span class="hl opt">,</span> ghostIndex<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> ghost<span class="hl opt">.</span>scaredTimer <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> SCARED_COLOR
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> GHOST_COLORS<span class="hl opt">[</span>ghostIndex<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawGhost</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghost<span class="hl opt">,</span> agentIndex<span class="hl opt">):</span>
+        pos <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>ghost<span class="hl opt">)</span>
+        <span class="hl kwb">dir</span> <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">(</span>ghost<span class="hl opt">)</span>
+        <span class="hl opt">(</span>screen_x<span class="hl opt">,</span> screen_y<span class="hl opt">) = (</span>self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>pos<span class="hl opt">) )</span>
+        coords <span class="hl opt">= []</span>
+        <span class="hl kwa">for</span> <span class="hl opt">(</span>x<span class="hl opt">,</span> y<span class="hl opt">)</span> <span class="hl kwa">in</span> GHOST_SHAPE<span class="hl opt">:</span>
+            coords<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">((</span>x<span class="hl opt">*</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE <span class="hl opt">+</span> screen_x<span class="hl opt">,</span> y<span class="hl opt">*</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE <span class="hl opt">+</span> screen_y<span class="hl opt">))</span>
+
+        colour <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getGhostColor</span><span class="hl opt">(</span>ghost<span class="hl opt">,</span> agentIndex<span class="hl opt">)</span>
+        body <span class="hl opt">=</span> <span class="hl kwd">polygon</span><span class="hl opt">(</span>coords<span class="hl opt">,</span> colour<span class="hl opt">,</span> filled <span class="hl opt">=</span> <span class="hl num">1</span><span class="hl opt">)</span>
+        WHITE <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1.0</span><span class="hl opt">,</span> <span class="hl num">1.0</span><span class="hl opt">,</span> <span class="hl num">1.0</span><span class="hl opt">)</span>
+        BLACK <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0.0</span><span class="hl opt">,</span> <span class="hl num">0.0</span><span class="hl opt">,</span> <span class="hl num">0.0</span><span class="hl opt">)</span>
+
+        dx <span class="hl opt">=</span> <span class="hl num">0</span>
+        dy <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'North'</span><span class="hl opt">:</span>
+            dy <span class="hl opt">= -</span><span class="hl num">0.2</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'South'</span><span class="hl opt">:</span>
+            dy <span class="hl opt">=</span> <span class="hl num">0.2</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'East'</span><span class="hl opt">:</span>
+            dx <span class="hl opt">=</span> <span class="hl num">0.2</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'West'</span><span class="hl opt">:</span>
+            dx <span class="hl opt">= -</span><span class="hl num">0.2</span>
+        leftEye <span class="hl opt">=</span> <span class="hl kwd">circle</span><span class="hl opt">((</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(-</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.2</span><span class="hl opt">,</span> WHITE<span class="hl opt">,</span> WHITE<span class="hl opt">)</span>
+        rightEye <span class="hl opt">=</span> <span class="hl kwd">circle</span><span class="hl opt">((</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.2</span><span class="hl opt">,</span> WHITE<span class="hl opt">,</span> WHITE<span class="hl opt">)</span>
+        leftPupil <span class="hl opt">=</span> <span class="hl kwd">circle</span><span class="hl opt">((</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(-</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.08</span><span class="hl opt">,</span> BLACK<span class="hl opt">,</span> BLACK<span class="hl opt">)</span>
+        rightPupil <span class="hl opt">=</span> <span class="hl kwd">circle</span><span class="hl opt">((</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.08</span><span class="hl opt">,</span> BLACK<span class="hl opt">,</span> BLACK<span class="hl opt">)</span>
+        ghostImageParts <span class="hl opt">= []</span>
+        ghostImageParts<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>body<span class="hl opt">)</span>
+        ghostImageParts<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>leftEye<span class="hl opt">)</span>
+        ghostImageParts<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>rightEye<span class="hl opt">)</span>
+        ghostImageParts<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>leftPupil<span class="hl opt">)</span>
+        ghostImageParts<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>rightPupil<span class="hl opt">)</span>
+
+        <span class="hl kwa">return</span> ghostImageParts
+
+    <span class="hl kwa">def</span> <span class="hl kwd">moveEyes</span><span class="hl opt">(</span>self<span class="hl opt">,</span> pos<span class="hl opt">,</span> <span class="hl kwb">dir</span><span class="hl opt">,</span> eyes<span class="hl opt">):</span>
+        <span class="hl opt">(</span>screen_x<span class="hl opt">,</span> screen_y<span class="hl opt">) = (</span>self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>pos<span class="hl opt">) )</span>
+        dx <span class="hl opt">=</span> <span class="hl num">0</span>
+        dy <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'North'</span><span class="hl opt">:</span>
+            dy <span class="hl opt">= -</span><span class="hl num">0.2</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'South'</span><span class="hl opt">:</span>
+            dy <span class="hl opt">=</span> <span class="hl num">0.2</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'East'</span><span class="hl opt">:</span>
+            dx <span class="hl opt">=</span> <span class="hl num">0.2</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">dir</span> <span class="hl opt">==</span> <span class="hl str">'West'</span><span class="hl opt">:</span>
+            dx <span class="hl opt">= -</span><span class="hl num">0.2</span>
+        <span class="hl kwd">moveCircle</span><span class="hl opt">(</span>eyes<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],(</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(-</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.2</span><span class="hl opt">)</span>
+        <span class="hl kwd">moveCircle</span><span class="hl opt">(</span>eyes<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">],(</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">/</span><span class="hl num">1.5</span><span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.2</span><span class="hl opt">)</span>
+        <span class="hl kwd">moveCircle</span><span class="hl opt">(</span>eyes<span class="hl opt">[</span><span class="hl num">2</span><span class="hl opt">],(</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(-</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.08</span><span class="hl opt">)</span>
+        <span class="hl kwd">moveCircle</span><span class="hl opt">(</span>eyes<span class="hl opt">[</span><span class="hl num">3</span><span class="hl opt">],(</span>screen_x<span class="hl opt">+</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">+</span>dx<span class="hl opt">),</span> screen_y<span class="hl opt">-</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*(</span><span class="hl num">0.3</span><span class="hl opt">-</span>dy<span class="hl opt">)),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>GHOST_SIZE<span class="hl opt">*</span><span class="hl num">0.08</span><span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">moveGhost</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghost<span class="hl opt">,</span> ghostIndex<span class="hl opt">,</span> prevGhost<span class="hl opt">,</span> ghostImageParts<span class="hl opt">):</span>
+        old_x<span class="hl opt">,</span> old_y <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>prevGhost<span class="hl opt">))</span>
+        new_x<span class="hl opt">,</span> new_y <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>ghost<span class="hl opt">))</span>
+        delta <span class="hl opt">=</span> new_x <span class="hl opt">-</span> old_x<span class="hl opt">,</span> new_y <span class="hl opt">-</span> old_y
+
+        <span class="hl kwa">for</span> ghostImagePart <span class="hl kwa">in</span> ghostImageParts<span class="hl opt">:</span>
+            <span class="hl kwd">move_by</span><span class="hl opt">(</span>ghostImagePart<span class="hl opt">,</span> delta<span class="hl opt">)</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+        <span class="hl kwa">if</span> ghost<span class="hl opt">.</span>scaredTimer <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            color <span class="hl opt">=</span> SCARED_COLOR
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            color <span class="hl opt">=</span> GHOST_COLORS<span class="hl opt">[</span>ghostIndex<span class="hl opt">]</span>
+        <span class="hl kwd">edit</span><span class="hl opt">(</span>ghostImageParts<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">], (</span><span class="hl str">'fill'</span><span class="hl opt">,</span> color<span class="hl opt">), (</span><span class="hl str">'outline'</span><span class="hl opt">,</span> color<span class="hl opt">))</span>
+        self<span class="hl opt">.</span><span class="hl kwd">moveEyes</span><span class="hl opt">(</span>self<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>ghost<span class="hl opt">),</span> self<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">(</span>ghost<span class="hl opt">),</span> ghostImageParts<span class="hl opt">[-</span><span class="hl num">4</span><span class="hl opt">:])</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getPosition</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentState<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> agentState<span class="hl opt">.</span>configuration <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">return</span> <span class="hl opt">(-</span><span class="hl num">1000</span><span class="hl opt">, -</span><span class="hl num">1000</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> agentState<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getDirection</span><span class="hl opt">(</span>self<span class="hl opt">,</span> agentState<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> agentState<span class="hl opt">.</span>configuration <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>STOP
+        <span class="hl kwa">return</span> agentState<span class="hl opt">.</span>configuration<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">finish</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwd">end_graphics</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">to_screen</span><span class="hl opt">(</span>self<span class="hl opt">,</span> point<span class="hl opt">):</span>
+        <span class="hl opt">(</span> x<span class="hl opt">,</span> y <span class="hl opt">) =</span> point
+        <span class="hl slc">#y = self.height - y</span>
+        x <span class="hl opt">= (</span>x <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">)*</span>self<span class="hl opt">.</span>gridSize
+        y <span class="hl opt">= (</span>self<span class="hl opt">.</span>height  <span class="hl opt">-</span> y<span class="hl opt">)*</span>self<span class="hl opt">.</span>gridSize
+        <span class="hl kwa">return</span> <span class="hl opt">(</span> x<span class="hl opt">,</span> y <span class="hl opt">)</span>
+
+    <span class="hl slc"># Fixes some TK issue with off-center circles</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">to_screen2</span><span class="hl opt">(</span>self<span class="hl opt">,</span> point<span class="hl opt">):</span>
+        <span class="hl opt">(</span> x<span class="hl opt">,</span> y <span class="hl opt">) =</span> point
+        <span class="hl slc">#y = self.height - y</span>
+        x <span class="hl opt">= (</span>x <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">)*</span>self<span class="hl opt">.</span>gridSize
+        y <span class="hl opt">= (</span>self<span class="hl opt">.</span>height  <span class="hl opt">-</span> y<span class="hl opt">)*</span>self<span class="hl opt">.</span>gridSize
+        <span class="hl kwa">return</span> <span class="hl opt">(</span> x<span class="hl opt">,</span> y <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawWalls</span><span class="hl opt">(</span>self<span class="hl opt">,</span> wallMatrix<span class="hl opt">):</span>
+        wallColor <span class="hl opt">=</span> WALL_COLOR
+        <span class="hl kwa">for</span> xNum<span class="hl opt">,</span> x <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>wallMatrix<span class="hl opt">):</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>capture <span class="hl kwa">and</span> <span class="hl opt">(</span>xNum <span class="hl opt">*</span> <span class="hl num">2</span><span class="hl opt">) &lt;</span> wallMatrix<span class="hl opt">.</span>width<span class="hl opt">:</span> wallColor <span class="hl opt">=</span> TEAM_COLORS<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>capture <span class="hl kwa">and</span> <span class="hl opt">(</span>xNum <span class="hl opt">*</span> <span class="hl num">2</span><span class="hl opt">) &gt;=</span> wallMatrix<span class="hl opt">.</span>width<span class="hl opt">:</span> wallColor <span class="hl opt">=</span> TEAM_COLORS<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span>
+
+            <span class="hl kwa">for</span> yNum<span class="hl opt">,</span> cell <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>x<span class="hl opt">):</span>
+                <span class="hl kwa">if</span> cell<span class="hl opt">:</span> <span class="hl slc"># There's a wall here</span>
+                    pos <span class="hl opt">= (</span>xNum<span class="hl opt">,</span> yNum<span class="hl opt">)</span>
+                    screen <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>pos<span class="hl opt">)</span>
+                    screen2 <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen2</span><span class="hl opt">(</span>pos<span class="hl opt">)</span>
+
+                    <span class="hl slc"># draw each quadrant of the square based on adjacent walls</span>
+                    wIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> yNum<span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    eIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> yNum<span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    nIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">,</span> yNum<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    sIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">,</span> yNum<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    nwIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> yNum<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    swIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> yNum<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    neIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> yNum<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+                    seIsWall <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">isWall</span><span class="hl opt">(</span>xNum<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> yNum<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallMatrix<span class="hl opt">)</span>
+
+                    <span class="hl slc"># NE quadrant</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> eIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># inner circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span>screen2<span class="hl opt">,</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">91</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> eIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># vertical line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">)-</span><span class="hl num">1</span><span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>eIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># horizontal line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span><span class="hl num">0</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">0.5</span><span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>eIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> neIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># outer circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen2<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">2</span><span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">180</span><span class="hl opt">,</span><span class="hl num">271</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">2</span><span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">0.5</span><span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">))),</span> wallColor<span class="hl opt">)</span>
+
+                    <span class="hl slc"># NW quadrant</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> wIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># inner circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span>screen2<span class="hl opt">,</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">90</span><span class="hl opt">,</span><span class="hl num">181</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> wIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># vertical line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">)-</span><span class="hl num">1</span><span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>wIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># horizontal line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span><span class="hl num">0</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">)-</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>nIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>wIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> nwIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># outer circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen2<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">270</span><span class="hl opt">,</span><span class="hl num">361</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">))),</span> wallColor<span class="hl opt">)</span>
+
+                    <span class="hl slc"># SE quadrant</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> eIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># inner circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span>screen2<span class="hl opt">,</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">270</span><span class="hl opt">,</span><span class="hl num">361</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> eIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># vertical line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">0.5</span><span class="hl opt">)+</span><span class="hl num">1</span><span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>eIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># horizontal line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span><span class="hl num">0</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">0.5</span><span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>eIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> seIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># outer circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen2<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">2</span><span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">90</span><span class="hl opt">,</span><span class="hl num">181</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">2</span><span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span><span class="hl num">0.5</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">0.5</span><span class="hl opt">))),</span> wallColor<span class="hl opt">)</span>
+
+                    <span class="hl slc"># SW quadrant</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> wIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># inner circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span>screen2<span class="hl opt">,</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">180</span><span class="hl opt">,</span><span class="hl num">271</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> wIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># vertical line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">0.5</span><span class="hl opt">)+</span><span class="hl num">1</span><span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span><span class="hl kwa">not</span> sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>wIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># horizontal line</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span><span class="hl num">0</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">)-</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                    <span class="hl kwa">if</span> <span class="hl opt">(</span>sIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span>wIsWall<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl opt">(</span><span class="hl kwa">not</span> swIsWall<span class="hl opt">):</span>
+                        <span class="hl slc"># outer circle</span>
+                        <span class="hl kwd">circle</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen2<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> WALL_RADIUS <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">,</span> wallColor<span class="hl opt">,</span> wallColor<span class="hl opt">, (</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">91</span><span class="hl opt">),</span> <span class="hl str">'arc'</span><span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">+</span><span class="hl num">1</span><span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">0.5</span><span class="hl opt">),</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">)),</span> wallColor<span class="hl opt">)</span>
+                        <span class="hl kwd">line</span><span class="hl opt">(</span><span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">2</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">-</span><span class="hl num">1</span><span class="hl opt">)),</span> <span class="hl kwd">add</span><span class="hl opt">(</span>screen<span class="hl opt">, (</span>self<span class="hl opt">.</span>gridSize<span class="hl opt">*(-</span><span class="hl num">1</span><span class="hl opt">)*</span>WALL_RADIUS<span class="hl opt">,</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">*(</span><span class="hl num">0.5</span><span class="hl opt">))),</span> wallColor<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isWall</span><span class="hl opt">(</span>self<span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">,</span> walls<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> x <span class="hl opt">&lt;</span> <span class="hl num">0</span> <span class="hl kwa">or</span> y <span class="hl opt">&lt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">return False</span>
+        <span class="hl kwa">if</span> x <span class="hl opt">&gt;=</span> walls<span class="hl opt">.</span>width <span class="hl kwa">or</span> y <span class="hl opt">&gt;=</span> walls<span class="hl opt">.</span>height<span class="hl opt">:</span>
+            <span class="hl kwa">return False</span>
+        <span class="hl kwa">return</span> walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawFood</span><span class="hl opt">(</span>self<span class="hl opt">,</span> foodMatrix <span class="hl opt">):</span>
+        foodImages <span class="hl opt">= []</span>
+        color <span class="hl opt">=</span> FOOD_COLOR
+        <span class="hl kwa">for</span> xNum<span class="hl opt">,</span> x <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>foodMatrix<span class="hl opt">):</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>capture <span class="hl kwa">and</span> <span class="hl opt">(</span>xNum <span class="hl opt">*</span> <span class="hl num">2</span><span class="hl opt">) &lt;=</span> foodMatrix<span class="hl opt">.</span>width<span class="hl opt">:</span> color <span class="hl opt">=</span> TEAM_COLORS<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>capture <span class="hl kwa">and</span> <span class="hl opt">(</span>xNum <span class="hl opt">*</span> <span class="hl num">2</span><span class="hl opt">) &gt;</span> foodMatrix<span class="hl opt">.</span>width<span class="hl opt">:</span> color <span class="hl opt">=</span> TEAM_COLORS<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span>
+            imageRow <span class="hl opt">= []</span>
+            foodImages<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>imageRow<span class="hl opt">)</span>
+            <span class="hl kwa">for</span> yNum<span class="hl opt">,</span> cell <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>x<span class="hl opt">):</span>
+                <span class="hl kwa">if</span> cell<span class="hl opt">:</span> <span class="hl slc"># There's food here</span>
+                    screen <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">((</span>xNum<span class="hl opt">,</span> yNum <span class="hl opt">))</span>
+                    dot <span class="hl opt">=</span> <span class="hl kwd">circle</span><span class="hl opt">(</span> screen<span class="hl opt">,</span>
+                                  FOOD_SIZE <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span>
+                                  outlineColor <span class="hl opt">=</span> color<span class="hl opt">,</span> fillColor <span class="hl opt">=</span> color<span class="hl opt">,</span>
+                                  width <span class="hl opt">=</span> <span class="hl num">1</span><span class="hl opt">)</span>
+                    imageRow<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>dot<span class="hl opt">)</span>
+                <span class="hl kwa">else</span><span class="hl opt">:</span>
+                    imageRow<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span><span class="hl kwa">None</span><span class="hl opt">)</span>
+        <span class="hl kwa">return</span> foodImages
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawCapsules</span><span class="hl opt">(</span>self<span class="hl opt">,</span> capsules <span class="hl opt">):</span>
+        capsuleImages <span class="hl opt">= {}</span>
+        <span class="hl kwa">for</span> capsule <span class="hl kwa">in</span> capsules<span class="hl opt">:</span>
+            <span class="hl opt">(</span> screen_x<span class="hl opt">,</span> screen_y <span class="hl opt">) =</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span>capsule<span class="hl opt">)</span>
+            dot <span class="hl opt">=</span> <span class="hl kwd">circle</span><span class="hl opt">( (</span>screen_x<span class="hl opt">,</span> screen_y<span class="hl opt">),</span>
+                              CAPSULE_SIZE <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span>
+                              outlineColor <span class="hl opt">=</span> CAPSULE_COLOR<span class="hl opt">,</span>
+                              fillColor <span class="hl opt">=</span> CAPSULE_COLOR<span class="hl opt">,</span>
+                              width <span class="hl opt">=</span> <span class="hl num">1</span><span class="hl opt">)</span>
+            capsuleImages<span class="hl opt">[</span>capsule<span class="hl opt">] =</span> dot
+        <span class="hl kwa">return</span> capsuleImages
+
+    <span class="hl kwa">def</span> <span class="hl kwd">removeFood</span><span class="hl opt">(</span>self<span class="hl opt">,</span> cell<span class="hl opt">,</span> foodImages <span class="hl opt">):</span>
+        x<span class="hl opt">,</span> y <span class="hl opt">=</span> cell
+        <span class="hl kwd">remove_from_screen</span><span class="hl opt">(</span>foodImages<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">])</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">removeCapsule</span><span class="hl opt">(</span>self<span class="hl opt">,</span> cell<span class="hl opt">,</span> capsuleImages <span class="hl opt">):</span>
+        x<span class="hl opt">,</span> y <span class="hl opt">=</span> cell
+        <span class="hl kwd">remove_from_screen</span><span class="hl opt">(</span>capsuleImages<span class="hl opt">[(</span>x<span class="hl opt">,</span> y<span class="hl opt">)])</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">drawExpandedCells</span><span class="hl opt">(</span>self<span class="hl opt">,</span> cells<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Draws an overlay of expanded grid positions for search agents</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        n <span class="hl opt">=</span> <span class="hl kwb">float</span><span class="hl opt">(</span><span class="hl kwb">len</span><span class="hl opt">(</span>cells<span class="hl opt">))</span>
+        baseColor <span class="hl opt">= [</span><span class="hl num">1.0</span><span class="hl opt">,</span> <span class="hl num">0.0</span><span class="hl opt">,</span> <span class="hl num">0.0</span><span class="hl opt">]</span>
+        self<span class="hl opt">.</span><span class="hl kwd">clearExpandedCells</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>expandedCells <span class="hl opt">= []</span>
+        <span class="hl kwa">for</span> k<span class="hl opt">,</span> cell <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>cells<span class="hl opt">):</span>
+            screenPos <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">to_screen</span><span class="hl opt">(</span> cell<span class="hl opt">)</span>
+            cellColor <span class="hl opt">=</span> <span class="hl kwd">formatColor</span><span class="hl opt">(*[(</span>n<span class="hl opt">-</span>k<span class="hl opt">) *</span> c <span class="hl opt">*</span> <span class="hl num">.5</span> <span class="hl opt">/</span> n <span class="hl opt">+</span> <span class="hl num">.25</span> <span class="hl kwa">for</span> c <span class="hl kwa">in</span> baseColor<span class="hl opt">])</span>
+            block <span class="hl opt">=</span> <span class="hl kwd">square</span><span class="hl opt">(</span>screenPos<span class="hl opt">,</span>
+                     <span class="hl num">0.5</span> <span class="hl opt">*</span> self<span class="hl opt">.</span>gridSize<span class="hl opt">,</span>
+                     color <span class="hl opt">=</span> cellColor<span class="hl opt">,</span>
+                     filled <span class="hl opt">=</span> <span class="hl num">1</span><span class="hl opt">,</span> behind<span class="hl opt">=</span><span class="hl num">2</span><span class="hl opt">)</span>
+            self<span class="hl opt">.</span>expandedCells<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>block<span class="hl opt">)</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>frameTime <span class="hl opt">&lt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+                <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">clearExpandedCells</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> <span class="hl str">'expandedCells'</span> <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>self<span class="hl opt">)</span> <span class="hl kwa">and</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span>expandedCells<span class="hl opt">) &gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">for</span> cell <span class="hl kwa">in</span> self<span class="hl opt">.</span>expandedCells<span class="hl opt">:</span>
+                <span class="hl kwd">remove_from_screen</span><span class="hl opt">(</span>cell<span class="hl opt">)</span>
+
+
+    <span class="hl kwa">def</span> <span class="hl kwd">updateDistributions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> distributions<span class="hl opt">):</span>
+        <span class="hl str">&quot;Draws an agent's belief distributions&quot;</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>distributionImages <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            self<span class="hl opt">.</span><span class="hl kwd">drawDistributions</span><span class="hl opt">(</span>self<span class="hl opt">.</span>previousState<span class="hl opt">)</span>
+        <span class="hl kwa">for</span> x <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span><span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span>distributionImages<span class="hl opt">)):</span>
+            <span class="hl kwa">for</span> y <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span><span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span>distributionImages<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">])):</span>
+                image <span class="hl opt">=</span> self<span class="hl opt">.</span>distributionImages<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]</span>
+                weights <span class="hl opt">= [</span>dist<span class="hl opt">[ (</span>x<span class="hl opt">,</span>y<span class="hl opt">) ]</span> <span class="hl kwa">for</span> dist <span class="hl kwa">in</span> distributions<span class="hl opt">]</span>
+
+                <span class="hl kwa">if</span> <span class="hl kwb">sum</span><span class="hl opt">(</span>weights<span class="hl opt">) !=</span> <span class="hl num">0</span><span class="hl opt">:</span>
+                    <span class="hl kwa">pass</span>
+                <span class="hl slc"># Fog of war</span>
+                color <span class="hl opt">= [</span><span class="hl num">0.0</span><span class="hl opt">,</span><span class="hl num">0.0</span><span class="hl opt">,</span><span class="hl num">0.0</span><span class="hl opt">]</span>
+                colors <span class="hl opt">=</span> GHOST_VEC_COLORS<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">:]</span> <span class="hl slc"># With Pacman</span>
+                <span class="hl kwa">if</span> self<span class="hl opt">.</span>capture<span class="hl opt">:</span> colors <span class="hl opt">=</span> GHOST_VEC_COLORS
+                <span class="hl kwa">for</span> weight<span class="hl opt">,</span> gcolor <span class="hl kwa">in</span> <span class="hl kwb">zip</span><span class="hl opt">(</span>weights<span class="hl opt">,</span> colors<span class="hl opt">):</span>
+                    color <span class="hl opt">= [</span><span class="hl kwb">min</span><span class="hl opt">(</span><span class="hl num">1.0</span><span class="hl opt">,</span> c <span class="hl opt">+</span> <span class="hl num">0.95</span> <span class="hl opt">*</span> g <span class="hl opt">*</span> weight <span class="hl opt">**</span> <span class="hl num">.3</span><span class="hl opt">)</span> <span class="hl kwa">for</span> c<span class="hl opt">,</span>g <span class="hl kwa">in</span> <span class="hl kwb">zip</span><span class="hl opt">(</span>color<span class="hl opt">,</span> gcolor<span class="hl opt">)]</span>
+                <span class="hl kwd">changeColor</span><span class="hl opt">(</span>image<span class="hl opt">,</span> <span class="hl kwd">formatColor</span><span class="hl opt">(*</span>color<span class="hl opt">))</span>
+        <span class="hl kwd">refresh</span><span class="hl opt">()</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">FirstPersonPacmanGraphics</span><span class="hl opt">(</span>PacmanGraphics<span class="hl opt">):</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> zoom <span class="hl opt">=</span> <span class="hl num">1.0</span><span class="hl opt">,</span> showGhosts <span class="hl opt">=</span> <span class="hl kwa">True</span><span class="hl opt">,</span> capture <span class="hl opt">=</span> <span class="hl kwa">False</span><span class="hl opt">,</span> frameTime<span class="hl opt">=</span><span class="hl num">0</span><span class="hl opt">):</span>
+        PacmanGraphics<span class="hl opt">.</span><span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> zoom<span class="hl opt">,</span> frameTime<span class="hl opt">=</span>frameTime<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>showGhosts <span class="hl opt">=</span> showGhosts
+        self<span class="hl opt">.</span>capture <span class="hl opt">=</span> capture
+
+    <span class="hl kwa">def</span> <span class="hl kwd">initialize</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">,</span> isBlue <span class="hl opt">=</span> <span class="hl kwa">False</span><span class="hl opt">):</span>
+
+        self<span class="hl opt">.</span>isBlue <span class="hl opt">=</span> isBlue
+        PacmanGraphics<span class="hl opt">.</span><span class="hl kwd">startGraphics</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">)</span>
+        <span class="hl slc"># Initialize distribution images</span>
+        walls <span class="hl opt">=</span> state<span class="hl opt">.</span>layout<span class="hl opt">.</span>walls
+        dist <span class="hl opt">= []</span>
+        self<span class="hl opt">.</span>layout <span class="hl opt">=</span> state<span class="hl opt">.</span>layout
+
+        <span class="hl slc"># Draw the rest</span>
+        self<span class="hl opt">.</span>distributionImages <span class="hl opt">=</span> <span class="hl kwa">None</span>  <span class="hl slc"># initialize lazily</span>
+        self<span class="hl opt">.</span><span class="hl kwd">drawStaticObjects</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+        self<span class="hl opt">.</span><span class="hl kwd">drawAgentObjects</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+
+        <span class="hl slc"># Information</span>
+        self<span class="hl opt">.</span>previousState <span class="hl opt">=</span> state
+
+    <span class="hl kwa">def</span> <span class="hl kwd">lookAhead</span><span class="hl opt">(</span>self<span class="hl opt">,</span> config<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl kwa">if</span> config<span class="hl opt">.</span><span class="hl kwd">getDirection</span><span class="hl opt">() ==</span> <span class="hl str">'Stop'</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">pass</span>
+            <span class="hl slc"># Draw relevant ghosts</span>
+            allGhosts <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getGhostStates</span><span class="hl opt">()</span>
+            visibleGhosts <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getVisibleGhosts</span><span class="hl opt">()</span>
+            <span class="hl kwa">for</span> i<span class="hl opt">,</span> ghost <span class="hl kwa">in</span> <span class="hl kwb">enumerate</span><span class="hl opt">(</span>allGhosts<span class="hl opt">):</span>
+                <span class="hl kwa">if</span> ghost <span class="hl kwa">in</span> visibleGhosts<span class="hl opt">:</span>
+                    self<span class="hl opt">.</span><span class="hl kwd">drawGhost</span><span class="hl opt">(</span>ghost<span class="hl opt">,</span> i<span class="hl opt">)</span>
+                <span class="hl kwa">else</span><span class="hl opt">:</span>
+                    self<span class="hl opt">.</span>currentGhostImages<span class="hl opt">[</span>i<span class="hl opt">] =</span> <span class="hl kwa">None</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getGhostColor</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghost<span class="hl opt">,</span> ghostIndex<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> GHOST_COLORS<span class="hl opt">[</span>ghostIndex<span class="hl opt">]</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getPosition</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghostState<span class="hl opt">):</span>
+        <span class="hl kwa">if not</span> self<span class="hl opt">.</span>showGhosts <span class="hl kwa">and not</span> ghostState<span class="hl opt">.</span>isPacman <span class="hl kwa">and</span> ghostState<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">()[</span><span class="hl num">1</span><span class="hl opt">] &gt;</span> <span class="hl num">1</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> <span class="hl opt">(-</span><span class="hl num">1000</span><span class="hl opt">, -</span><span class="hl num">1000</span><span class="hl opt">)</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> PacmanGraphics<span class="hl opt">.</span><span class="hl kwd">getPosition</span><span class="hl opt">(</span>self<span class="hl opt">,</span> ghostState<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">add</span><span class="hl opt">(</span>x<span class="hl opt">,</span> y<span class="hl opt">):</span>
+    <span class="hl kwa">return</span> <span class="hl opt">(</span>x<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] +</span> y<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> x<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] +</span> y<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">])</span>
+
+
+<span class="hl slc"># Saving graphical output</span>
+<span class="hl slc"># -----------------------</span>
+<span class="hl slc"># Note: to make an animated gif from this postscript output, try the command:</span>
+<span class="hl slc"># convert -delay 7 -loop 1 -compress lzw -layers optimize frame* out.gif</span>
+<span class="hl slc"># convert is part of imagemagick (freeware)</span>
+
+SAVE_POSTSCRIPT <span class="hl opt">=</span> <span class="hl kwa">False</span>
+POSTSCRIPT_OUTPUT_DIR <span class="hl opt">=</span> <span class="hl str">'frames'</span>
+FRAME_NUMBER <span class="hl opt">=</span> <span class="hl num">0</span>
+<span class="hl kwa">import</span> os
+
+<span class="hl kwa">def</span> <span class="hl kwd">saveFrame</span><span class="hl opt">():</span>
+    <span class="hl str">&quot;Saves the current graphical output as a postscript file&quot;</span>
+    <span class="hl kwa">global</span> SAVE_POSTSCRIPT<span class="hl opt">,</span> FRAME_NUMBER<span class="hl opt">,</span> POSTSCRIPT_OUTPUT_DIR
+    <span class="hl kwa">if not</span> SAVE_POSTSCRIPT<span class="hl opt">:</span> <span class="hl kwa">return</span>
+    <span class="hl kwa">if not</span> os<span class="hl opt">.</span>path<span class="hl opt">.</span><span class="hl kwd">exists</span><span class="hl opt">(</span>POSTSCRIPT_OUTPUT_DIR<span class="hl opt">):</span> os<span class="hl opt">.</span><span class="hl kwd">mkdir</span><span class="hl opt">(</span>POSTSCRIPT_OUTPUT_DIR<span class="hl opt">)</span>
+    name <span class="hl opt">=</span> os<span class="hl opt">.</span>path<span class="hl opt">.</span><span class="hl kwd">join</span><span class="hl opt">(</span>POSTSCRIPT_OUTPUT_DIR<span class="hl opt">,</span> <span class="hl str">'frame_%08d.ps'</span> <span class="hl opt">%</span> FRAME_NUMBER<span class="hl opt">)</span>
+    FRAME_NUMBER <span class="hl opt">+=</span> <span class="hl num">1</span>
+    <span class="hl kwd">writePostscript</span><span class="hl opt">(</span>name<span class="hl opt">)</span> <span class="hl slc"># writes the current canvas</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

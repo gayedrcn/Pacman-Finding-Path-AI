@@ -1,0 +1,556 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>searchAgents.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># searchAgents.py</span>
+<span class="hl slc"># ---------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">This file contains all of the agents that can be selected to</span>
+<span class="hl str">control Pacman.  To select an agent, use the '-p' option</span>
+<span class="hl str">when running pacman.py.  Arguments can be passed to your agent</span>
+<span class="hl str">using '-a'.  For example, to load a SearchAgent that uses</span>
+<span class="hl str">depth first search (dfs), run the following command:</span>
+<span class="hl str"></span>
+<span class="hl str">&gt; python pacman.py -p SearchAgent -a fn=depthFirstSearch</span>
+<span class="hl str"></span>
+<span class="hl str">Commands to invoke other search strategies can be found in the</span>
+<span class="hl str">project description.</span>
+<span class="hl str"></span>
+<span class="hl str">Please only change the parts of the file you are asked to.</span>
+<span class="hl str">Look for the lines that say</span>
+<span class="hl str"></span>
+<span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+<span class="hl str"></span>
+<span class="hl str">The parts you fill in start about 3/4 of the way down.  Follow the</span>
+<span class="hl str">project description for details.</span>
+<span class="hl str"></span>
+<span class="hl str">Good luck and happy searching!</span>
+<span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Directions
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Agent
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Actions
+<span class="hl kwa">import</span> util
+<span class="hl kwa">import</span> time
+<span class="hl kwa">import</span> search
+
+<span class="hl kwa">class</span> <span class="hl kwd">GoWestAgent</span><span class="hl opt">(</span>Agent<span class="hl opt">):</span>
+    <span class="hl str">&quot;An agent that goes West until it can't.&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getAction</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;The agent receives a GameState (defined in pacman.py).&quot;</span>
+        <span class="hl kwa">if</span> Directions<span class="hl opt">.</span>WEST <span class="hl kwa">in</span> state<span class="hl opt">.</span><span class="hl kwd">getLegalPacmanActions</span><span class="hl opt">():</span>
+            <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>WEST
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>STOP
+
+<span class="hl slc">#######################################################</span>
+<span class="hl slc"># This portion is written for you, but will only work #</span>
+<span class="hl slc">#       after you fill in parts of search.py          #</span>
+<span class="hl slc">#######################################################</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">SearchAgent</span><span class="hl opt">(</span>Agent<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    This very general search agent finds a path using a supplied search algorithm for a</span>
+<span class="hl str">    supplied search problem, then returns actions to follow that path.</span>
+<span class="hl str"></span>
+<span class="hl str">    As a default, this agent runs DFS on a PositionSearchProblem to find location (1,1)</span>
+<span class="hl str"></span>
+<span class="hl str">    Options for fn include:</span>
+<span class="hl str">      depthFirstSearch or dfs</span>
+<span class="hl str">      breadthFirstSearch or bfs</span>
+<span class="hl str"></span>
+<span class="hl str"></span>
+<span class="hl str">    Note: You should NOT change any code in SearchAgent</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> fn<span class="hl opt">=</span><span class="hl str">'depthFirstSearch'</span><span class="hl opt">,</span> prob<span class="hl opt">=</span><span class="hl str">'PositionSearchProblem'</span><span class="hl opt">,</span> heuristic<span class="hl opt">=</span><span class="hl str">'nullHeuristic'</span><span class="hl opt">):</span>
+        <span class="hl slc"># Warning: some advanced Python magic is employed below to find the right functions and problems</span>
+
+        <span class="hl slc"># Get the search function from the name and heuristic</span>
+        <span class="hl kwa">if</span> fn <span class="hl kwa">not in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>search<span class="hl opt">):</span>
+            <span class="hl kwa">raise</span> <span class="hl kwc">AttributeError</span><span class="hl opt">,</span> fn <span class="hl opt">+</span> <span class="hl str">' is not a search function in search.py.'</span>
+        func <span class="hl opt">=</span> <span class="hl kwb">getattr</span><span class="hl opt">(</span>search<span class="hl opt">,</span> fn<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> <span class="hl str">'heuristic'</span> <span class="hl kwa">not in</span> func<span class="hl opt">.</span>func_code<span class="hl opt">.</span>co_varnames<span class="hl opt">:</span>
+            <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'[SearchAgent] using function '</span> <span class="hl opt">+</span> fn<span class="hl opt">)</span>
+            self<span class="hl opt">.</span>searchFunction <span class="hl opt">=</span> func
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">if</span> heuristic <span class="hl kwa">in</span> <span class="hl kwb">globals</span><span class="hl opt">().</span><span class="hl kwd">keys</span><span class="hl opt">():</span>
+                heur <span class="hl opt">=</span> <span class="hl kwb">globals</span><span class="hl opt">()[</span>heuristic<span class="hl opt">]</span>
+            <span class="hl kwa">elif</span> heuristic <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>search<span class="hl opt">):</span>
+                heur <span class="hl opt">=</span> <span class="hl kwb">getattr</span><span class="hl opt">(</span>search<span class="hl opt">,</span> heuristic<span class="hl opt">)</span>
+            <span class="hl kwa">else</span><span class="hl opt">:</span>
+                <span class="hl kwa">raise</span> <span class="hl kwc">AttributeError</span><span class="hl opt">,</span> heuristic <span class="hl opt">+</span> <span class="hl str">' is not a function in searchAgents.py or search.py.'</span>
+            <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'[SearchAgent] using function %s and heuristic %s'</span> <span class="hl opt">% (</span>fn<span class="hl opt">,</span> heuristic<span class="hl opt">))</span>
+            <span class="hl slc"># Note: this bit of Python trickery combines the search algorithm and the heuristic</span>
+            self<span class="hl opt">.</span>searchFunction <span class="hl opt">=</span> <span class="hl kwa">lambda</span> x<span class="hl opt">:</span> <span class="hl kwd">func</span><span class="hl opt">(</span>x<span class="hl opt">,</span> heuristic<span class="hl opt">=</span>heur<span class="hl opt">)</span>
+
+        <span class="hl slc"># Get the search problem type from the name</span>
+        <span class="hl kwa">if</span> prob <span class="hl kwa">not in</span> <span class="hl kwb">globals</span><span class="hl opt">().</span><span class="hl kwd">keys</span><span class="hl opt">()</span> <span class="hl kwa">or not</span> prob<span class="hl opt">.</span><span class="hl kwd">endswith</span><span class="hl opt">(</span><span class="hl str">'Problem'</span><span class="hl opt">):</span>
+            <span class="hl kwa">raise</span> <span class="hl kwc">AttributeError</span><span class="hl opt">,</span> prob <span class="hl opt">+</span> <span class="hl str">' is not a search problem type in SearchAgents.py.'</span>
+        self<span class="hl opt">.</span>searchType <span class="hl opt">=</span> <span class="hl kwb">globals</span><span class="hl opt">()[</span>prob<span class="hl opt">]</span>
+        <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'[SearchAgent] using problem type '</span> <span class="hl opt">+</span> prob<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">registerInitialState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        This is the first time that the agent sees the layout of the game board. Here, we</span>
+<span class="hl str">        choose a path to the goal.  In this phase, the agent should compute the path to the</span>
+<span class="hl str">        goal and store it in a local variable.  All of the work is done in this method!</span>
+<span class="hl str"></span>
+<span class="hl str">        state: a GameState object (pacman.py)</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> self<span class="hl opt">.</span>searchFunction <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">,</span> <span class="hl str">&quot;No search function provided for SearchAgent&quot;</span>
+        starttime <span class="hl opt">=</span> time<span class="hl opt">.</span><span class="hl kwd">time</span><span class="hl opt">()</span>
+        problem <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">searchType</span><span class="hl opt">(</span>state<span class="hl opt">)</span> <span class="hl slc"># Makes a new search problem</span>
+        self<span class="hl opt">.</span>actions  <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">searchFunction</span><span class="hl opt">(</span>problem<span class="hl opt">)</span> <span class="hl slc"># Find a path</span>
+        totalCost <span class="hl opt">=</span> problem<span class="hl opt">.</span><span class="hl kwd">getCostOfActions</span><span class="hl opt">(</span>self<span class="hl opt">.</span>actions<span class="hl opt">)</span>
+        <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'Path found with total cost of %d in %.1f seconds'</span> <span class="hl opt">% (</span>totalCost<span class="hl opt">,</span> time<span class="hl opt">.</span><span class="hl kwd">time</span><span class="hl opt">() -</span> starttime<span class="hl opt">))</span>
+        <span class="hl kwa">if</span> <span class="hl str">'_expanded'</span> <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>problem<span class="hl opt">):</span> <span class="hl kwa">print</span><span class="hl opt">(</span><span class="hl str">'Search nodes expanded: %d'</span> <span class="hl opt">%</span> problem<span class="hl opt">.</span>_expanded<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getAction</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the next action in the path chosen earlier (in registerInitialState).  Return</span>
+<span class="hl str">        Directions.STOP if there is no further action to take.</span>
+<span class="hl str"></span>
+<span class="hl str">        state: a GameState object (pacman.py)</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> <span class="hl str">'actionIndex'</span> <span class="hl kwa">not in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>self<span class="hl opt">):</span> self<span class="hl opt">.</span>actionIndex <span class="hl opt">=</span> <span class="hl num">0</span>
+        i <span class="hl opt">=</span> self<span class="hl opt">.</span>actionIndex
+        self<span class="hl opt">.</span>actionIndex <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">if</span> i <span class="hl opt">&lt;</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span>actions<span class="hl opt">):</span>
+            <span class="hl kwa">return</span> self<span class="hl opt">.</span>actions<span class="hl opt">[</span>i<span class="hl opt">]</span>
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>STOP
+
+<span class="hl kwa">class</span> <span class="hl kwd">PositionSearchProblem</span><span class="hl opt">(</span>search<span class="hl opt">.</span>SearchProblem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A search problem defines the state space, start state, goal test,</span>
+<span class="hl str">    successor function and cost function.  This search problem can be</span>
+<span class="hl str">    used to find paths to a particular point on the pacman board.</span>
+<span class="hl str"></span>
+<span class="hl str">    The state space consists of (x,y) positions in a pacman game.</span>
+<span class="hl str"></span>
+<span class="hl str">    Note: this search problem is fully specified; you should NOT change it.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> gameState<span class="hl opt">,</span> costFn <span class="hl opt">=</span> <span class="hl kwa">lambda</span> x<span class="hl opt">:</span> <span class="hl num">1</span><span class="hl opt">,</span> goal<span class="hl opt">=(</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">),</span> start<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">,</span> warn<span class="hl opt">=</span><span class="hl kwa">True</span><span class="hl opt">,</span> visualize<span class="hl opt">=</span><span class="hl kwa">True</span><span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Stores the start and goal.</span>
+<span class="hl str"></span>
+<span class="hl str">        gameState: A GameState object (pacman.py)</span>
+<span class="hl str">        costFn: A function from a search state (tuple) to a non-negative number</span>
+<span class="hl str">        goal: A position in the gameState</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        self<span class="hl opt">.</span>walls <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getWalls</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>startState <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()</span>
+        <span class="hl kwa">if</span> start <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span> self<span class="hl opt">.</span>startState <span class="hl opt">=</span> start
+        self<span class="hl opt">.</span>goal <span class="hl opt">=</span> goal
+        self<span class="hl opt">.</span>costFn <span class="hl opt">=</span> costFn
+        self<span class="hl opt">.</span>visualize <span class="hl opt">=</span> visualize
+        <span class="hl kwa">if</span> warn <span class="hl kwa">and</span> <span class="hl opt">(</span>gameState<span class="hl opt">.</span><span class="hl kwd">getNumFood</span><span class="hl opt">() !=</span> <span class="hl num">1</span> <span class="hl kwa">or not</span> gameState<span class="hl opt">.</span><span class="hl kwd">hasFood</span><span class="hl opt">(*</span>goal<span class="hl opt">)):</span>
+            <span class="hl kwa">print</span> <span class="hl str">'Warning: this does not look like a regular search maze'</span>
+
+        <span class="hl slc"># For display purposes</span>
+        self<span class="hl opt">.</span>_visited<span class="hl opt">,</span> self<span class="hl opt">.</span>_visitedlist<span class="hl opt">,</span> self<span class="hl opt">.</span>_expanded <span class="hl opt">= {}, [],</span> <span class="hl num">0</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getStartState</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>startState
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoalState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        isGoal <span class="hl opt">=</span> state <span class="hl opt">==</span> self<span class="hl opt">.</span>goal
+
+        <span class="hl slc"># For display purposes only</span>
+        <span class="hl kwa">if</span> isGoal <span class="hl kwa">and</span> self<span class="hl opt">.</span>visualize<span class="hl opt">:</span>
+            self<span class="hl opt">.</span>_visitedlist<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+            <span class="hl kwa">import</span> __main__
+            <span class="hl kwa">if</span> <span class="hl str">'_display'</span> <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>__main__<span class="hl opt">):</span>
+                <span class="hl kwa">if</span> <span class="hl str">'drawExpandedCells'</span> <span class="hl kwa">in</span> <span class="hl kwb">dir</span><span class="hl opt">(</span>__main__<span class="hl opt">.</span>_display<span class="hl opt">):</span> <span class="hl slc">#&#64;UndefinedVariable</span>
+                    __main__<span class="hl opt">.</span>_display<span class="hl opt">.</span><span class="hl kwd">drawExpandedCells</span><span class="hl opt">(</span>self<span class="hl opt">.</span>_visitedlist<span class="hl opt">)</span> <span class="hl slc">#&#64;UndefinedVariable</span>
+
+        <span class="hl kwa">return</span> isGoal
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getSuccessors</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns successor states, the actions they require, and a cost of 1.</span>
+<span class="hl str"></span>
+<span class="hl str">         As noted in search.py:</span>
+<span class="hl str">             For a given state, this should return a list of triples,</span>
+<span class="hl str">         (successor, action, stepCost), where 'successor' is a</span>
+<span class="hl str">         successor to the current state, 'action' is the action</span>
+<span class="hl str">         required to get there, and 'stepCost' is the incremental</span>
+<span class="hl str">         cost of expanding to that successor</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+
+        successors <span class="hl opt">= []</span>
+        <span class="hl kwa">for</span> action <span class="hl kwa">in</span> <span class="hl opt">[</span>Directions<span class="hl opt">.</span>NORTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>SOUTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>EAST<span class="hl opt">,</span> Directions<span class="hl opt">.</span>WEST<span class="hl opt">]:</span>
+            x<span class="hl opt">,</span>y <span class="hl opt">=</span> state
+            dx<span class="hl opt">,</span> dy <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span>action<span class="hl opt">)</span>
+            nextx<span class="hl opt">,</span> nexty <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x <span class="hl opt">+</span> dx<span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>y <span class="hl opt">+</span> dy<span class="hl opt">)</span>
+            <span class="hl kwa">if not</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>nextx<span class="hl opt">][</span>nexty<span class="hl opt">]:</span>
+                nextState <span class="hl opt">= (</span>nextx<span class="hl opt">,</span> nexty<span class="hl opt">)</span>
+                cost <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">costFn</span><span class="hl opt">(</span>nextState<span class="hl opt">)</span>
+                successors<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( (</span> nextState<span class="hl opt">,</span> action<span class="hl opt">,</span> cost<span class="hl opt">) )</span>
+
+        <span class="hl slc"># Bookkeeping for display purposes</span>
+        self<span class="hl opt">.</span>_expanded <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">if</span> state <span class="hl kwa">not in</span> self<span class="hl opt">.</span>_visited<span class="hl opt">:</span>
+            self<span class="hl opt">.</span>_visited<span class="hl opt">[</span>state<span class="hl opt">] =</span> <span class="hl kwa">True</span>
+            self<span class="hl opt">.</span>_visitedlist<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+
+        <span class="hl kwa">return</span> successors
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getCostOfActions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> actions<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the cost of a particular sequence of actions.  If those actions</span>
+<span class="hl str">        include an illegal move, return 999999</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> actions <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">return</span> <span class="hl num">999999</span>
+        x<span class="hl opt">,</span>y<span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getStartState</span><span class="hl opt">()</span>
+        cost <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwa">for</span> action <span class="hl kwa">in</span> actions<span class="hl opt">:</span>
+            <span class="hl slc"># Check figure out the next state and see whether its' legal</span>
+            dx<span class="hl opt">,</span> dy <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span>action<span class="hl opt">)</span>
+            x<span class="hl opt">,</span> y <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x <span class="hl opt">+</span> dx<span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>y <span class="hl opt">+</span> dy<span class="hl opt">)</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]:</span> <span class="hl kwa">return</span> <span class="hl num">999999</span>
+            cost <span class="hl opt">+=</span> self<span class="hl opt">.</span><span class="hl kwd">costFn</span><span class="hl opt">((</span>x<span class="hl opt">,</span>y<span class="hl opt">))</span>
+        <span class="hl kwa">return</span> cost
+
+<span class="hl kwa">class</span> <span class="hl kwd">StayEastSearchAgent</span><span class="hl opt">(</span>SearchAgent<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    An agent for position search with a cost function that penalizes being in</span>
+<span class="hl str">    positions on the West side of the board.</span>
+<span class="hl str"></span>
+<span class="hl str">    The cost function for stepping into a position (x,y) is 1/2^x.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>searchFunction <span class="hl opt">=</span> search<span class="hl opt">.</span>uniformCostSearch
+        costFn <span class="hl opt">=</span> <span class="hl kwa">lambda</span> pos<span class="hl opt">:</span> <span class="hl num">.5</span> <span class="hl opt">**</span> pos<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+        self<span class="hl opt">.</span>searchType <span class="hl opt">=</span> <span class="hl kwa">lambda</span> state<span class="hl opt">:</span> <span class="hl kwd">PositionSearchProblem</span><span class="hl opt">(</span>state<span class="hl opt">,</span> costFn<span class="hl opt">)</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">StayWestSearchAgent</span><span class="hl opt">(</span>SearchAgent<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    An agent for position search with a cost function that penalizes being in</span>
+<span class="hl str">    positions on the East side of the board.</span>
+<span class="hl str"></span>
+<span class="hl str">    The cost function for stepping into a position (x,y) is 2^x.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>searchFunction <span class="hl opt">=</span> search<span class="hl opt">.</span>uniformCostSearch
+        costFn <span class="hl opt">=</span> <span class="hl kwa">lambda</span> pos<span class="hl opt">:</span> <span class="hl num">2</span> <span class="hl opt">**</span> pos<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+        self<span class="hl opt">.</span>searchType <span class="hl opt">=</span> <span class="hl kwa">lambda</span> state<span class="hl opt">:</span> <span class="hl kwd">PositionSearchProblem</span><span class="hl opt">(</span>state<span class="hl opt">,</span> costFn<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">manhattanHeuristic</span><span class="hl opt">(</span>position<span class="hl opt">,</span> problem<span class="hl opt">,</span> info<span class="hl opt">={}):</span>
+    <span class="hl str">&quot;The Manhattan distance heuristic for a PositionSearchProblem&quot;</span>
+    xy1 <span class="hl opt">=</span> position
+    xy2 <span class="hl opt">=</span> problem<span class="hl opt">.</span>goal
+    <span class="hl kwa">return</span> <span class="hl kwb">abs</span><span class="hl opt">(</span>xy1<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] -</span> xy2<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]) +</span> <span class="hl kwb">abs</span><span class="hl opt">(</span>xy1<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] -</span> xy2<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">])</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">euclideanHeuristic</span><span class="hl opt">(</span>position<span class="hl opt">,</span> problem<span class="hl opt">,</span> info<span class="hl opt">={}):</span>
+    <span class="hl str">&quot;The Euclidean distance heuristic for a PositionSearchProblem&quot;</span>
+    xy1 <span class="hl opt">=</span> position
+    xy2 <span class="hl opt">=</span> problem<span class="hl opt">.</span>goal
+    <span class="hl kwa">return</span> <span class="hl opt">( (</span>xy1<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] -</span> xy2<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]) **</span> <span class="hl num">2</span> <span class="hl opt">+ (</span>xy1<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] -</span> xy2<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]) **</span> <span class="hl num">2</span> <span class="hl opt">) **</span> <span class="hl num">0.5</span>
+
+<span class="hl slc">#####################################################</span>
+<span class="hl slc"># This portion is incomplete.  Time to write code!  #</span>
+<span class="hl slc">#####################################################</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">CornersProblem</span><span class="hl opt">(</span>search<span class="hl opt">.</span>SearchProblem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    This search problem finds paths through all four corners of a layout.</span>
+<span class="hl str"></span>
+<span class="hl str">    You must select a suitable state space and successor function</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> startingGameState<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Stores the walls, pacman's starting position and corners.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        self<span class="hl opt">.</span>walls <span class="hl opt">=</span> startingGameState<span class="hl opt">.</span><span class="hl kwd">getWalls</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>startingPosition <span class="hl opt">=</span> startingGameState<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()</span>
+        top<span class="hl opt">,</span> right <span class="hl opt">=</span> self<span class="hl opt">.</span>walls<span class="hl opt">.</span>height<span class="hl opt">-</span><span class="hl num">2</span><span class="hl opt">,</span> self<span class="hl opt">.</span>walls<span class="hl opt">.</span>width<span class="hl opt">-</span><span class="hl num">2</span>
+        self<span class="hl opt">.</span>corners <span class="hl opt">= ((</span><span class="hl num">1</span><span class="hl opt">,</span><span class="hl num">1</span><span class="hl opt">), (</span><span class="hl num">1</span><span class="hl opt">,</span>top<span class="hl opt">), (</span>right<span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">), (</span>right<span class="hl opt">,</span> top<span class="hl opt">))</span>
+        <span class="hl kwa">for</span> corner <span class="hl kwa">in</span> self<span class="hl opt">.</span>corners<span class="hl opt">:</span>
+            <span class="hl kwa">if not</span> startingGameState<span class="hl opt">.</span><span class="hl kwd">hasFood</span><span class="hl opt">(*</span>corner<span class="hl opt">):</span>
+                <span class="hl kwa">print</span> <span class="hl str">'Warning: no food in corner '</span> <span class="hl opt">+</span> <span class="hl kwb">str</span><span class="hl opt">(</span>corner<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>_expanded <span class="hl opt">=</span> <span class="hl num">0</span> <span class="hl slc"># Number of search nodes expanded</span>
+        <span class="hl slc"># Please add any code here which you would like to use</span>
+        <span class="hl slc"># in initializing the problem</span>
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getStartState</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns the start state (in your state space, not the full Pacman state space)&quot;</span>
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoalState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns whether this search state is a goal state of the problem&quot;</span>
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getSuccessors</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns successor states, the actions they require, and a cost of 1.</span>
+<span class="hl str"></span>
+<span class="hl str">         As noted in search.py:</span>
+<span class="hl str">             For a given state, this should return a list of triples,</span>
+<span class="hl str">         (successor, action, stepCost), where 'successor' is a</span>
+<span class="hl str">         successor to the current state, 'action' is the action</span>
+<span class="hl str">         required to get there, and 'stepCost' is the incremental</span>
+<span class="hl str">         cost of expanding to that successor</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+
+        successors <span class="hl opt">= []</span>
+        <span class="hl kwa">for</span> action <span class="hl kwa">in</span> <span class="hl opt">[</span>Directions<span class="hl opt">.</span>NORTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>SOUTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>EAST<span class="hl opt">,</span> Directions<span class="hl opt">.</span>WEST<span class="hl opt">]:</span>
+            <span class="hl slc"># Add a successor state to the successor list if the action is legal</span>
+            <span class="hl slc"># Here's a code snippet for figuring out whether a new position hits a wall:</span>
+            <span class="hl slc">#   x,y = currentPosition</span>
+            <span class="hl slc">#   dx, dy = Actions.directionToVector(action)</span>
+            <span class="hl slc">#   nextx, nexty = int(x + dx), int(y + dy)</span>
+            <span class="hl slc">#   hitsWall = self.walls[nextx][nexty]</span>
+
+            <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+
+        self<span class="hl opt">.</span>_expanded <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">return</span> successors
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getCostOfActions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> actions<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        Returns the cost of a particular sequence of actions.  If those actions</span>
+<span class="hl str">        include an illegal move, return 999999.  This is implemented for you.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl kwa">if</span> actions <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> <span class="hl kwa">return</span> <span class="hl num">999999</span>
+        x<span class="hl opt">,</span>y<span class="hl opt">=</span> self<span class="hl opt">.</span>startingPosition
+        <span class="hl kwa">for</span> action <span class="hl kwa">in</span> actions<span class="hl opt">:</span>
+            dx<span class="hl opt">,</span> dy <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span>action<span class="hl opt">)</span>
+            x<span class="hl opt">,</span> y <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x <span class="hl opt">+</span> dx<span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>y <span class="hl opt">+</span> dy<span class="hl opt">)</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]:</span> <span class="hl kwa">return</span> <span class="hl num">999999</span>
+        <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span>actions<span class="hl opt">)</span>
+
+
+<span class="hl kwa">def</span> <span class="hl kwd">cornersHeuristic</span><span class="hl opt">(</span>state<span class="hl opt">,</span> problem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A heuristic for the CornersProblem that you defined.</span>
+<span class="hl str"></span>
+<span class="hl str">      state:   The current search state</span>
+<span class="hl str">               (a data structure you chose in your search problem)</span>
+<span class="hl str"></span>
+<span class="hl str">      problem: The CornersProblem instance for this layout.</span>
+<span class="hl str"></span>
+<span class="hl str">    This function should always return a number that is a lower bound</span>
+<span class="hl str">    on the shortest path from the state to a goal of the problem; i.e.</span>
+<span class="hl str">    it should be admissible (as well as consistent).</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    corners <span class="hl opt">=</span> problem<span class="hl opt">.</span>corners <span class="hl slc"># These are the corner coordinates</span>
+    walls <span class="hl opt">=</span> problem<span class="hl opt">.</span>walls <span class="hl slc"># These are the walls of the maze, as a Grid (game.py)</span>
+
+    <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+    <span class="hl kwa">return</span> <span class="hl num">0</span> <span class="hl slc"># Default to trivial solution</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">AStarCornersAgent</span><span class="hl opt">(</span>SearchAgent<span class="hl opt">):</span>
+    <span class="hl str">&quot;A SearchAgent for FoodSearchProblem using A* and your foodHeuristic&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>searchFunction <span class="hl opt">=</span> <span class="hl kwa">lambda</span> prob<span class="hl opt">:</span> search<span class="hl opt">.</span><span class="hl kwd">aStarSearch</span><span class="hl opt">(</span>prob<span class="hl opt">,</span> cornersHeuristic<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>searchType <span class="hl opt">=</span> CornersProblem
+
+<span class="hl kwa">class</span> FoodSearchProblem<span class="hl opt">:</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    A search problem associated with finding the a path that collects all of the</span>
+<span class="hl str">    food (dots) in a Pacman game.</span>
+<span class="hl str"></span>
+<span class="hl str">    A search state in this problem is a tuple ( pacmanPosition, foodGrid ) where</span>
+<span class="hl str">      pacmanPosition: a tuple (x,y) of integers specifying Pacman's position</span>
+<span class="hl str">      foodGrid:       a Grid (see game.py) of either True or False, specifying remaining food</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> startingGameState<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>start <span class="hl opt">= (</span>startingGameState<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">(),</span> startingGameState<span class="hl opt">.</span><span class="hl kwd">getFood</span><span class="hl opt">())</span>
+        self<span class="hl opt">.</span>walls <span class="hl opt">=</span> startingGameState<span class="hl opt">.</span><span class="hl kwd">getWalls</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>startingGameState <span class="hl opt">=</span> startingGameState
+        self<span class="hl opt">.</span>_expanded <span class="hl opt">=</span> <span class="hl num">0</span>
+        self<span class="hl opt">.</span>heuristicInfo <span class="hl opt">= {}</span> <span class="hl slc"># A dictionary for the heuristic to store information</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getStartState</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> self<span class="hl opt">.</span>start
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoalState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl kwa">return</span> state<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">].</span><span class="hl kwd">count</span><span class="hl opt">() ==</span> <span class="hl num">0</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getSuccessors</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns successor states, the actions they require, and a cost of 1.&quot;</span>
+        successors <span class="hl opt">= []</span>
+        self<span class="hl opt">.</span>_expanded <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">for</span> direction <span class="hl kwa">in</span> <span class="hl opt">[</span>Directions<span class="hl opt">.</span>NORTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>SOUTH<span class="hl opt">,</span> Directions<span class="hl opt">.</span>EAST<span class="hl opt">,</span> Directions<span class="hl opt">.</span>WEST<span class="hl opt">]:</span>
+            x<span class="hl opt">,</span>y <span class="hl opt">=</span> state<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]</span>
+            dx<span class="hl opt">,</span> dy <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span>direction<span class="hl opt">)</span>
+            nextx<span class="hl opt">,</span> nexty <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x <span class="hl opt">+</span> dx<span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>y <span class="hl opt">+</span> dy<span class="hl opt">)</span>
+            <span class="hl kwa">if not</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>nextx<span class="hl opt">][</span>nexty<span class="hl opt">]:</span>
+                nextFood <span class="hl opt">=</span> state<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">].</span><span class="hl kwd">copy</span><span class="hl opt">()</span>
+                nextFood<span class="hl opt">[</span>nextx<span class="hl opt">][</span>nexty<span class="hl opt">] =</span> <span class="hl kwa">False</span>
+                successors<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">( ( ((</span>nextx<span class="hl opt">,</span> nexty<span class="hl opt">),</span> nextFood<span class="hl opt">),</span> direction<span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">) )</span>
+        <span class="hl kwa">return</span> successors
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getCostOfActions</span><span class="hl opt">(</span>self<span class="hl opt">,</span> actions<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;Returns the cost of a particular sequence of actions.  If those actions</span>
+<span class="hl str">        include an illegal move, return 999999&quot;&quot;&quot;</span>
+        x<span class="hl opt">,</span>y<span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getStartState</span><span class="hl opt">()[</span><span class="hl num">0</span><span class="hl opt">]</span>
+        cost <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwa">for</span> action <span class="hl kwa">in</span> actions<span class="hl opt">:</span>
+            <span class="hl slc"># figure out the next state and see whether it's legal</span>
+            dx<span class="hl opt">,</span> dy <span class="hl opt">=</span> Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span>action<span class="hl opt">)</span>
+            x<span class="hl opt">,</span> y <span class="hl opt">=</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x <span class="hl opt">+</span> dx<span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>y <span class="hl opt">+</span> dy<span class="hl opt">)</span>
+            <span class="hl kwa">if</span> self<span class="hl opt">.</span>walls<span class="hl opt">[</span>x<span class="hl opt">][</span>y<span class="hl opt">]:</span>
+                <span class="hl kwa">return</span> <span class="hl num">999999</span>
+            cost <span class="hl opt">+=</span> <span class="hl num">1</span>
+        <span class="hl kwa">return</span> cost
+
+<span class="hl kwa">class</span> <span class="hl kwd">AStarFoodSearchAgent</span><span class="hl opt">(</span>SearchAgent<span class="hl opt">):</span>
+    <span class="hl str">&quot;A SearchAgent for FoodSearchProblem using A* and your foodHeuristic&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>searchFunction <span class="hl opt">=</span> <span class="hl kwa">lambda</span> prob<span class="hl opt">:</span> search<span class="hl opt">.</span><span class="hl kwd">aStarSearch</span><span class="hl opt">(</span>prob<span class="hl opt">,</span> foodHeuristic<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>searchType <span class="hl opt">=</span> FoodSearchProblem
+
+<span class="hl kwa">def</span> <span class="hl kwd">foodHeuristic</span><span class="hl opt">(</span>state<span class="hl opt">,</span> problem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Your heuristic for the FoodSearchProblem goes here.</span>
+<span class="hl str"></span>
+<span class="hl str">    This heuristic must be consistent to ensure correctness.  First, try to come up</span>
+<span class="hl str">    with an admissible heuristic; almost all admissible heuristics will be consistent</span>
+<span class="hl str">    as well.</span>
+<span class="hl str"></span>
+<span class="hl str">    If using A* ever finds a solution that is worse uniform cost search finds,</span>
+<span class="hl str">    your heuristic is *not* consistent, and probably not admissible!  On the other hand,</span>
+<span class="hl str">    inadmissible or inconsistent heuristics may find optimal solutions, so be careful.</span>
+<span class="hl str"></span>
+<span class="hl str">    The state is a tuple ( pacmanPosition, foodGrid ) where foodGrid is a</span>
+<span class="hl str">    Grid (see game.py) of either True or False. You can call foodGrid.asList()</span>
+<span class="hl str">    to get a list of food coordinates instead.</span>
+<span class="hl str"></span>
+<span class="hl str">    If you want access to info like walls, capsules, etc., you can query the problem.</span>
+<span class="hl str">    For example, problem.walls gives you a Grid of where the walls are.</span>
+<span class="hl str"></span>
+<span class="hl str">    If you want to *store* information to be reused in other calls to the heuristic,</span>
+<span class="hl str">    there is a dictionary called problem.heuristicInfo that you can use. For example,</span>
+<span class="hl str">    if you only want to count the walls once and store that value, try:</span>
+<span class="hl str">      problem.heuristicInfo['wallCount'] = problem.walls.count()</span>
+<span class="hl str">    Subsequent calls to this heuristic can access problem.heuristicInfo['wallCount']</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    position<span class="hl opt">,</span> foodGrid <span class="hl opt">=</span> state
+    <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+    <span class="hl kwa">return</span> <span class="hl num">0</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">ClosestDotSearchAgent</span><span class="hl opt">(</span>SearchAgent<span class="hl opt">):</span>
+    <span class="hl str">&quot;Search for all food using a sequence of searches&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">registerInitialState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        self<span class="hl opt">.</span>actions <span class="hl opt">= []</span>
+        currentState <span class="hl opt">=</span> state
+        <span class="hl kwa">while</span><span class="hl opt">(</span>currentState<span class="hl opt">.</span><span class="hl kwd">getFood</span><span class="hl opt">().</span><span class="hl kwd">count</span><span class="hl opt">() &gt;</span> <span class="hl num">0</span><span class="hl opt">):</span>
+            nextPathSegment <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">findPathToClosestDot</span><span class="hl opt">(</span>currentState<span class="hl opt">)</span> <span class="hl slc"># The missing piece</span>
+            self<span class="hl opt">.</span>actions <span class="hl opt">+=</span> nextPathSegment
+            <span class="hl kwa">for</span> action <span class="hl kwa">in</span> nextPathSegment<span class="hl opt">:</span>
+                legal <span class="hl opt">=</span> currentState<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">()</span>
+                <span class="hl kwa">if</span> action <span class="hl kwa">not in</span> legal<span class="hl opt">:</span>
+                    t <span class="hl opt">= (</span><span class="hl kwb">str</span><span class="hl opt">(</span>action<span class="hl opt">),</span> <span class="hl kwb">str</span><span class="hl opt">(</span>currentState<span class="hl opt">))</span>
+                    <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">,</span> <span class="hl str">'findPathToClosestDot returned an illegal move: %s!</span><span class="hl esc">\n</span><span class="hl str">%s'</span> <span class="hl opt">%</span> t
+                currentState <span class="hl opt">=</span> currentState<span class="hl opt">.</span><span class="hl kwd">generateSuccessor</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> action<span class="hl opt">)</span>
+        self<span class="hl opt">.</span>actionIndex <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwa">print</span> <span class="hl str">'Path found with cost %d.'</span> <span class="hl opt">%</span> <span class="hl kwb">len</span><span class="hl opt">(</span>self<span class="hl opt">.</span>actions<span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">findPathToClosestDot</span><span class="hl opt">(</span>self<span class="hl opt">,</span> gameState<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns a path (a list of actions) to the closest dot, starting from gameState&quot;</span>
+        <span class="hl slc"># Here are some useful elements of the startState</span>
+        startPosition <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()</span>
+        food <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getFood</span><span class="hl opt">()</span>
+        walls <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getWalls</span><span class="hl opt">()</span>
+        problem <span class="hl opt">=</span> <span class="hl kwd">AnyFoodSearchProblem</span><span class="hl opt">(</span>gameState<span class="hl opt">)</span>
+
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">AnyFoodSearchProblem</span><span class="hl opt">(</span>PositionSearchProblem<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">      A search problem for finding a path to any food.</span>
+<span class="hl str"></span>
+<span class="hl str">      This search problem is just like the PositionSearchProblem, but</span>
+<span class="hl str">      has a different goal test, which you need to fill in below.  The</span>
+<span class="hl str">      state space and successor function do not need to be changed.</span>
+<span class="hl str"></span>
+<span class="hl str">      The class definition above, AnyFoodSearchProblem(PositionSearchProblem),</span>
+<span class="hl str">      inherits the methods of the PositionSearchProblem.</span>
+<span class="hl str"></span>
+<span class="hl str">      You can use this search problem to help you fill in</span>
+<span class="hl str">      the findPathToClosestDot method.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span>self<span class="hl opt">,</span> gameState<span class="hl opt">):</span>
+        <span class="hl str">&quot;Stores information from the gameState.  You don't need to change this.&quot;</span>
+        <span class="hl slc"># Store the food for later reference</span>
+        self<span class="hl opt">.</span>food <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getFood</span><span class="hl opt">()</span>
+
+        <span class="hl slc"># Store info for the PositionSearchProblem (no need to change this)</span>
+        self<span class="hl opt">.</span>walls <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getWalls</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>startState <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()</span>
+        self<span class="hl opt">.</span>costFn <span class="hl opt">=</span> <span class="hl kwa">lambda</span> x<span class="hl opt">:</span> <span class="hl num">1</span>
+        self<span class="hl opt">.</span>_visited<span class="hl opt">,</span> self<span class="hl opt">.</span>_visitedlist<span class="hl opt">,</span> self<span class="hl opt">.</span>_expanded <span class="hl opt">= {}, [],</span> <span class="hl num">0</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">isGoalState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        The state is Pacman's position. Fill this in with a goal test</span>
+<span class="hl str">        that will complete the problem definition.</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        x<span class="hl opt">,</span>y <span class="hl opt">=</span> state
+
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl slc">##################</span>
+<span class="hl slc"># Mini-contest 1 #</span>
+<span class="hl slc">##################</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">ApproximateSearchAgent</span><span class="hl opt">(</span>Agent<span class="hl opt">):</span>
+    <span class="hl str">&quot;Implement your contest entry here.  Change anything but the class name.&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">registerInitialState</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;This method is called before any moves are made.&quot;</span>
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getAction</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">        From game.py:</span>
+<span class="hl str">        The Agent will receive a GameState and must return an action from</span>
+<span class="hl str">        Directions.{North, South, East, West, Stop}</span>
+<span class="hl str">        &quot;&quot;&quot;</span>
+        <span class="hl str">&quot;*** YOUR CODE HERE ***&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">mazeDistance</span><span class="hl opt">(</span>point1<span class="hl opt">,</span> point2<span class="hl opt">,</span> gameState<span class="hl opt">):</span>
+    <span class="hl str">&quot;&quot;&quot;</span>
+<span class="hl str">    Returns the maze distance between any two points, using the search functions</span>
+<span class="hl str">    you have already built.  The gameState can be any game state -- Pacman's position</span>
+<span class="hl str">    in that state is ignored.</span>
+<span class="hl str"></span>
+<span class="hl str">    Example usage: mazeDistance( (2,4), (5,6), gameState)</span>
+<span class="hl str"></span>
+<span class="hl str">    This might be a useful helper function for your ApproximateSearchAgent.</span>
+<span class="hl str">    &quot;&quot;&quot;</span>
+    x1<span class="hl opt">,</span> y1 <span class="hl opt">=</span> point1
+    x2<span class="hl opt">,</span> y2 <span class="hl opt">=</span> point2
+    walls <span class="hl opt">=</span> gameState<span class="hl opt">.</span><span class="hl kwd">getWalls</span><span class="hl opt">()</span>
+    <span class="hl kwa">assert not</span> walls<span class="hl opt">[</span>x1<span class="hl opt">][</span>y1<span class="hl opt">],</span> <span class="hl str">'point1 is a wall: '</span> <span class="hl opt">+</span> point1
+    <span class="hl kwa">assert not</span> walls<span class="hl opt">[</span>x2<span class="hl opt">][</span>y2<span class="hl opt">],</span> <span class="hl str">'point2 is a wall: '</span> <span class="hl opt">+</span> <span class="hl kwb">str</span><span class="hl opt">(</span>point2<span class="hl opt">)</span>
+    prob <span class="hl opt">=</span> <span class="hl kwd">PositionSearchProblem</span><span class="hl opt">(</span>gameState<span class="hl opt">,</span> start<span class="hl opt">=</span>point1<span class="hl opt">,</span> goal<span class="hl opt">=</span>point2<span class="hl opt">,</span> warn<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">,</span> visualize<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+    <span class="hl kwa">return</span> <span class="hl kwb">len</span><span class="hl opt">(</span>search<span class="hl opt">.</span><span class="hl kwd">bfs</span><span class="hl opt">(</span>prob<span class="hl opt">))</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

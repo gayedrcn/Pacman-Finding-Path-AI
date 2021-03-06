@@ -1,0 +1,406 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>graphicsUtils.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># graphicsUtils.py</span>
+<span class="hl slc"># ----------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">import</span> sys
+<span class="hl kwa">import</span> math
+<span class="hl kwa">import</span> random
+<span class="hl kwa">import</span> string
+<span class="hl kwa">import</span> time
+<span class="hl kwa">import</span> types
+<span class="hl kwa">import</span> Tkinter
+
+_Windows <span class="hl opt">=</span> sys<span class="hl opt">.</span>platform <span class="hl opt">==</span> <span class="hl str">'win32'</span>  <span class="hl slc"># True if on Win95/98/NT</span>
+
+_root_window <span class="hl opt">=</span> <span class="hl kwa">None</span>      <span class="hl slc"># The root window for graphics output</span>
+_canvas <span class="hl opt">=</span> <span class="hl kwa">None</span>      <span class="hl slc"># The canvas which holds graphics</span>
+_canvas_xs <span class="hl opt">=</span> <span class="hl kwa">None</span>      <span class="hl slc"># Size of canvas object</span>
+_canvas_ys <span class="hl opt">=</span> <span class="hl kwa">None</span>
+_canvas_x <span class="hl opt">=</span> <span class="hl kwa">None</span>      <span class="hl slc"># Current position on canvas</span>
+_canvas_y <span class="hl opt">=</span> <span class="hl kwa">None</span>
+_canvas_col <span class="hl opt">=</span> <span class="hl kwa">None</span>      <span class="hl slc"># Current colour (set to black below)</span>
+_canvas_tsize <span class="hl opt">=</span> <span class="hl num">12</span>
+_canvas_tserifs <span class="hl opt">=</span> <span class="hl num">0</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span>r<span class="hl opt">,</span> g<span class="hl opt">,</span> b<span class="hl opt">):</span>
+    <span class="hl kwa">return</span> <span class="hl str">'#%02x%02x%02x'</span> <span class="hl opt">% (</span><span class="hl kwb">int</span><span class="hl opt">(</span>r <span class="hl opt">*</span> <span class="hl num">255</span><span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>g <span class="hl opt">*</span> <span class="hl num">255</span><span class="hl opt">),</span> <span class="hl kwb">int</span><span class="hl opt">(</span>b <span class="hl opt">*</span> <span class="hl num">255</span><span class="hl opt">))</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">colorToVector</span><span class="hl opt">(</span>color<span class="hl opt">):</span>
+    <span class="hl kwa">return</span> <span class="hl kwb">map</span><span class="hl opt">(</span><span class="hl kwa">lambda</span> x<span class="hl opt">:</span> <span class="hl kwb">int</span><span class="hl opt">(</span>x<span class="hl opt">,</span> <span class="hl num">16</span><span class="hl opt">) /</span> <span class="hl num">256.0</span><span class="hl opt">, [</span>color<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">3</span><span class="hl opt">],</span> color<span class="hl opt">[</span><span class="hl num">3</span><span class="hl opt">:</span><span class="hl num">5</span><span class="hl opt">],</span> color<span class="hl opt">[</span><span class="hl num">5</span><span class="hl opt">:</span><span class="hl num">7</span><span class="hl opt">]])</span>
+
+<span class="hl kwa">if</span> _Windows<span class="hl opt">:</span>
+    _canvas_tfonts <span class="hl opt">= [</span><span class="hl str">'times new roman'</span><span class="hl opt">,</span> <span class="hl str">'lucida console'</span><span class="hl opt">]</span>
+<span class="hl kwa">else</span><span class="hl opt">:</span>
+    _canvas_tfonts <span class="hl opt">= [</span><span class="hl str">'times'</span><span class="hl opt">,</span> <span class="hl str">'lucidasans-24'</span><span class="hl opt">]</span>
+    <span class="hl kwa">pass</span> <span class="hl slc"># XXX need defaults here</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">sleep</span><span class="hl opt">(</span>secs<span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _root_window
+    <span class="hl kwa">if</span> _root_window <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+        time<span class="hl opt">.</span><span class="hl kwd">sleep</span><span class="hl opt">(</span>secs<span class="hl opt">)</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        _root_window<span class="hl opt">.</span><span class="hl kwd">update_idletasks</span><span class="hl opt">()</span>
+        _root_window<span class="hl opt">.</span><span class="hl kwd">after</span><span class="hl opt">(</span><span class="hl kwb">int</span><span class="hl opt">(</span><span class="hl num">1000</span> <span class="hl opt">*</span> secs<span class="hl opt">),</span> _root_window<span class="hl opt">.</span>quit<span class="hl opt">)</span>
+        _root_window<span class="hl opt">.</span><span class="hl kwd">mainloop</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">begin_graphics</span><span class="hl opt">(</span>width<span class="hl opt">=</span><span class="hl num">640</span><span class="hl opt">,</span> height<span class="hl opt">=</span><span class="hl num">480</span><span class="hl opt">,</span> color<span class="hl opt">=</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">),</span> title<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+
+    <span class="hl kwa">global</span> _root_window<span class="hl opt">,</span> _canvas<span class="hl opt">,</span> _canvas_x<span class="hl opt">,</span> _canvas_y<span class="hl opt">,</span> _canvas_xs<span class="hl opt">,</span> _canvas_ys<span class="hl opt">,</span> _bg_color
+
+    <span class="hl slc"># Check for duplicate call</span>
+    <span class="hl kwa">if</span> _root_window <span class="hl kwa">is not None</span><span class="hl opt">:</span>
+        <span class="hl slc"># Lose the window.</span>
+        _root_window<span class="hl opt">.</span><span class="hl kwd">destroy</span><span class="hl opt">()</span>
+
+    <span class="hl slc"># Save the canvas size parameters</span>
+    _canvas_xs<span class="hl opt">,</span> _canvas_ys <span class="hl opt">=</span> width <span class="hl opt">-</span> <span class="hl num">1</span><span class="hl opt">,</span> height <span class="hl opt">-</span> <span class="hl num">1</span>
+    _canvas_x<span class="hl opt">,</span> _canvas_y <span class="hl opt">=</span> <span class="hl num">0</span><span class="hl opt">,</span> _canvas_ys
+    _bg_color <span class="hl opt">=</span> color
+
+    <span class="hl slc"># Create the root window</span>
+    _root_window <span class="hl opt">=</span> Tkinter<span class="hl opt">.</span><span class="hl kwd">Tk</span><span class="hl opt">()</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">protocol</span><span class="hl opt">(</span><span class="hl str">'WM_DELETE_WINDOW'</span><span class="hl opt">,</span> _destroy_window<span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">title</span><span class="hl opt">(</span>title <span class="hl kwa">or</span> <span class="hl str">'Graphics Window'</span><span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">resizable</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)</span>
+
+    <span class="hl slc"># Create the canvas object</span>
+    <span class="hl kwa">try</span><span class="hl opt">:</span>
+        _canvas <span class="hl opt">=</span> Tkinter<span class="hl opt">.</span><span class="hl kwd">Canvas</span><span class="hl opt">(</span>_root_window<span class="hl opt">,</span> width<span class="hl opt">=</span>width<span class="hl opt">,</span> height<span class="hl opt">=</span>height<span class="hl opt">)</span>
+        _canvas<span class="hl opt">.</span><span class="hl kwd">pack</span><span class="hl opt">()</span>
+        <span class="hl kwd">draw_background</span><span class="hl opt">()</span>
+        _canvas<span class="hl opt">.</span><span class="hl kwd">update</span><span class="hl opt">()</span>
+    <span class="hl kwa">except</span><span class="hl opt">:</span>
+        _root_window <span class="hl opt">=</span> <span class="hl kwa">None</span>
+        <span class="hl kwa">raise</span>
+
+    <span class="hl slc"># Bind to key-down and key-up events</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;KeyPress&gt;&quot;</span><span class="hl opt">,</span> _keypress <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;KeyRelease&gt;&quot;</span><span class="hl opt">,</span> _keyrelease <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;FocusIn&gt;&quot;</span><span class="hl opt">,</span> _clear_keys <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;FocusOut&gt;&quot;</span><span class="hl opt">,</span> _clear_keys <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;Button-1&gt;&quot;</span><span class="hl opt">,</span> _leftclick <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;Button-2&gt;&quot;</span><span class="hl opt">,</span> _rightclick <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;Button-3&gt;&quot;</span><span class="hl opt">,</span> _rightclick <span class="hl opt">)</span>
+    _root_window<span class="hl opt">.</span><span class="hl kwd">bind</span><span class="hl opt">(</span> <span class="hl str">&quot;&lt;Control-Button-1&gt;&quot;</span><span class="hl opt">,</span> _ctrl_leftclick<span class="hl opt">)</span>
+    <span class="hl kwd">_clear_keys</span><span class="hl opt">()</span>
+
+_leftclick_loc <span class="hl opt">=</span> <span class="hl kwa">None</span>
+_rightclick_loc <span class="hl opt">=</span> <span class="hl kwa">None</span>
+_ctrl_leftclick_loc <span class="hl opt">=</span> <span class="hl kwa">None</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_leftclick</span><span class="hl opt">(</span>event<span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _leftclick_loc
+    _leftclick_loc <span class="hl opt">= (</span>event<span class="hl opt">.</span>x<span class="hl opt">,</span> event<span class="hl opt">.</span>y<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_rightclick</span><span class="hl opt">(</span>event<span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _rightclick_loc
+    _rightclick_loc <span class="hl opt">= (</span>event<span class="hl opt">.</span>x<span class="hl opt">,</span> event<span class="hl opt">.</span>y<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_ctrl_leftclick</span><span class="hl opt">(</span>event<span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _ctrl_leftclick_loc
+    _ctrl_leftclick_loc <span class="hl opt">= (</span>event<span class="hl opt">.</span>x<span class="hl opt">,</span> event<span class="hl opt">.</span>y<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">wait_for_click</span><span class="hl opt">():</span>
+    <span class="hl kwa">while True</span><span class="hl opt">:</span>
+        <span class="hl kwa">global</span> _leftclick_loc
+        <span class="hl kwa">global</span> _rightclick_loc
+        <span class="hl kwa">global</span> _ctrl_leftclick_loc
+        <span class="hl kwa">if</span> _leftclick_loc <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            val <span class="hl opt">=</span> _leftclick_loc
+            _leftclick_loc <span class="hl opt">=</span> <span class="hl kwa">None</span>
+            <span class="hl kwa">return</span> val<span class="hl opt">,</span> <span class="hl str">'left'</span>
+        <span class="hl kwa">if</span> _rightclick_loc <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            val <span class="hl opt">=</span> _rightclick_loc
+            _rightclick_loc <span class="hl opt">=</span> <span class="hl kwa">None</span>
+            <span class="hl kwa">return</span> val<span class="hl opt">,</span> <span class="hl str">'right'</span>
+        <span class="hl kwa">if</span> _ctrl_leftclick_loc <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+            val <span class="hl opt">=</span> _ctrl_leftclick_loc
+            _ctrl_leftclick_loc <span class="hl opt">=</span> <span class="hl kwa">None</span>
+            <span class="hl kwa">return</span> val<span class="hl opt">,</span> <span class="hl str">'ctrl_left'</span>
+        <span class="hl kwd">sleep</span><span class="hl opt">(</span><span class="hl num">0.05</span><span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">draw_background</span><span class="hl opt">():</span>
+    corners <span class="hl opt">= [(</span><span class="hl num">0</span><span class="hl opt">,</span><span class="hl num">0</span><span class="hl opt">), (</span><span class="hl num">0</span><span class="hl opt">,</span> _canvas_ys<span class="hl opt">), (</span>_canvas_xs<span class="hl opt">,</span> _canvas_ys<span class="hl opt">), (</span>_canvas_xs<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">)]</span>
+    <span class="hl kwd">polygon</span><span class="hl opt">(</span>corners<span class="hl opt">,</span> _bg_color<span class="hl opt">,</span> fillColor<span class="hl opt">=</span>_bg_color<span class="hl opt">,</span> filled<span class="hl opt">=</span><span class="hl kwa">True</span><span class="hl opt">,</span> smoothed<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_destroy_window</span><span class="hl opt">(</span>event<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+    sys<span class="hl opt">.</span><span class="hl kwd">exit</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">)</span>
+<span class="hl slc">#    global _root_window</span>
+<span class="hl slc">#    _root_window.destroy()</span>
+<span class="hl slc">#    _root_window = None</span>
+    <span class="hl slc">#print &quot;DESTROY&quot;</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">end_graphics</span><span class="hl opt">():</span>
+    <span class="hl kwa">global</span> _root_window<span class="hl opt">,</span> _canvas<span class="hl opt">,</span> _mouse_enabled
+    <span class="hl kwa">try</span><span class="hl opt">:</span>
+        <span class="hl kwa">try</span><span class="hl opt">:</span>
+            <span class="hl kwd">sleep</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">)</span>
+            <span class="hl kwa">if</span> _root_window <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+                _root_window<span class="hl opt">.</span><span class="hl kwd">destroy</span><span class="hl opt">()</span>
+        <span class="hl kwa">except</span> <span class="hl kwc">SystemExit</span><span class="hl opt">,</span> e<span class="hl opt">:</span>
+            <span class="hl kwa">print</span> <span class="hl str">'Ending graphics raised an exception:'</span><span class="hl opt">,</span> e
+    <span class="hl kwa">finally</span><span class="hl opt">:</span>
+        _root_window <span class="hl opt">=</span> <span class="hl kwa">None</span>
+        _canvas <span class="hl opt">=</span> <span class="hl kwa">None</span>
+        _mouse_enabled <span class="hl opt">=</span> <span class="hl num">0</span>
+        <span class="hl kwd">_clear_keys</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">clear_screen</span><span class="hl opt">(</span>background<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _canvas_x<span class="hl opt">,</span> _canvas_y
+    _canvas<span class="hl opt">.</span><span class="hl kwd">delete</span><span class="hl opt">(</span><span class="hl str">'all'</span><span class="hl opt">)</span>
+    <span class="hl kwd">draw_background</span><span class="hl opt">()</span>
+    _canvas_x<span class="hl opt">,</span> _canvas_y <span class="hl opt">=</span> <span class="hl num">0</span><span class="hl opt">,</span> _canvas_ys
+
+<span class="hl kwa">def</span> <span class="hl kwd">polygon</span><span class="hl opt">(</span>coords<span class="hl opt">,</span> outlineColor<span class="hl opt">,</span> fillColor<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">,</span> filled<span class="hl opt">=</span><span class="hl num">1</span><span class="hl opt">,</span> smoothed<span class="hl opt">=</span><span class="hl num">1</span><span class="hl opt">,</span> behind<span class="hl opt">=</span><span class="hl num">0</span><span class="hl opt">,</span> width<span class="hl opt">=</span><span class="hl num">1</span><span class="hl opt">):</span>
+    c <span class="hl opt">= []</span>
+    <span class="hl kwa">for</span> coord <span class="hl kwa">in</span> coords<span class="hl opt">:</span>
+        c<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>coord<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">])</span>
+        c<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>coord<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">])</span>
+    <span class="hl kwa">if</span> fillColor <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span> fillColor <span class="hl opt">=</span> outlineColor
+    <span class="hl kwa">if</span> filled <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl opt">:</span> fillColor <span class="hl opt">=</span> <span class="hl str">&quot;&quot;</span>
+    poly <span class="hl opt">=</span> _canvas<span class="hl opt">.</span><span class="hl kwd">create_polygon</span><span class="hl opt">(</span>c<span class="hl opt">,</span> outline<span class="hl opt">=</span>outlineColor<span class="hl opt">,</span> fill<span class="hl opt">=</span>fillColor<span class="hl opt">,</span> smooth<span class="hl opt">=</span>smoothed<span class="hl opt">,</span> width<span class="hl opt">=</span>width<span class="hl opt">)</span>
+    <span class="hl kwa">if</span> behind <span class="hl opt">&gt;</span> <span class="hl num">0</span><span class="hl opt">:</span>
+        _canvas<span class="hl opt">.</span><span class="hl kwd">tag_lower</span><span class="hl opt">(</span>poly<span class="hl opt">,</span> behind<span class="hl opt">)</span> <span class="hl slc"># Higher should be more visible</span>
+    <span class="hl kwa">return</span> poly
+
+<span class="hl kwa">def</span> <span class="hl kwd">square</span><span class="hl opt">(</span>pos<span class="hl opt">,</span> r<span class="hl opt">,</span> color<span class="hl opt">,</span> filled<span class="hl opt">=</span><span class="hl num">1</span><span class="hl opt">,</span> behind<span class="hl opt">=</span><span class="hl num">0</span><span class="hl opt">):</span>
+    x<span class="hl opt">,</span> y <span class="hl opt">=</span> pos
+    coords <span class="hl opt">= [(</span>x <span class="hl opt">-</span> r<span class="hl opt">,</span> y <span class="hl opt">-</span> r<span class="hl opt">), (</span>x <span class="hl opt">+</span> r<span class="hl opt">,</span> y <span class="hl opt">-</span> r<span class="hl opt">), (</span>x <span class="hl opt">+</span> r<span class="hl opt">,</span> y <span class="hl opt">+</span> r<span class="hl opt">), (</span>x <span class="hl opt">-</span> r<span class="hl opt">,</span> y <span class="hl opt">+</span> r<span class="hl opt">)]</span>
+    <span class="hl kwa">return</span> <span class="hl kwd">polygon</span><span class="hl opt">(</span>coords<span class="hl opt">,</span> color<span class="hl opt">,</span> color<span class="hl opt">,</span> filled<span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> behind<span class="hl opt">=</span>behind<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">circle</span><span class="hl opt">(</span>pos<span class="hl opt">,</span> r<span class="hl opt">,</span> outlineColor<span class="hl opt">,</span> fillColor<span class="hl opt">,</span> endpoints<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">,</span> style<span class="hl opt">=</span><span class="hl str">'pieslice'</span><span class="hl opt">,</span> width<span class="hl opt">=</span><span class="hl num">2</span><span class="hl opt">):</span>
+    x<span class="hl opt">,</span> y <span class="hl opt">=</span> pos
+    x0<span class="hl opt">,</span> x1 <span class="hl opt">=</span> x <span class="hl opt">-</span> r <span class="hl opt">-</span> <span class="hl num">1</span><span class="hl opt">,</span> x <span class="hl opt">+</span> r
+    y0<span class="hl opt">,</span> y1 <span class="hl opt">=</span> y <span class="hl opt">-</span> r <span class="hl opt">-</span> <span class="hl num">1</span><span class="hl opt">,</span> y <span class="hl opt">+</span> r
+    <span class="hl kwa">if</span> endpoints <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+        e <span class="hl opt">= [</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">359</span><span class="hl opt">]</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        e <span class="hl opt">=</span> <span class="hl kwb">list</span><span class="hl opt">(</span>endpoints<span class="hl opt">)</span>
+    <span class="hl kwa">while</span> e<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] &gt;</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]:</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] =</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] +</span> <span class="hl num">360</span>
+
+    <span class="hl kwa">return</span> _canvas<span class="hl opt">.</span><span class="hl kwd">create_arc</span><span class="hl opt">(</span>x0<span class="hl opt">,</span> y0<span class="hl opt">,</span> x1<span class="hl opt">,</span> y1<span class="hl opt">,</span> outline<span class="hl opt">=</span>outlineColor<span class="hl opt">,</span> fill<span class="hl opt">=</span>fillColor<span class="hl opt">,</span>
+                              extent<span class="hl opt">=</span>e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] -</span> e<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> start<span class="hl opt">=</span>e<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> style<span class="hl opt">=</span>style<span class="hl opt">,</span> width<span class="hl opt">=</span>width<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">image</span><span class="hl opt">(</span>pos<span class="hl opt">,</span> <span class="hl kwb">file</span><span class="hl opt">=</span><span class="hl str">&quot;../../blueghost.gif&quot;</span><span class="hl opt">):</span>
+    x<span class="hl opt">,</span> y <span class="hl opt">=</span> pos
+    <span class="hl slc"># img = PhotoImage(file=file)</span>
+    <span class="hl kwa">return</span> _canvas<span class="hl opt">.</span><span class="hl kwd">create_image</span><span class="hl opt">(</span>x<span class="hl opt">,</span> y<span class="hl opt">,</span> image <span class="hl opt">=</span> Tkinter<span class="hl opt">.</span><span class="hl kwd">PhotoImage</span><span class="hl opt">(</span><span class="hl kwb">file</span><span class="hl opt">=</span><span class="hl kwb">file</span><span class="hl opt">),</span> anchor <span class="hl opt">=</span> Tkinter<span class="hl opt">.</span>NW<span class="hl opt">)</span>
+
+
+<span class="hl kwa">def</span> <span class="hl kwd">refresh</span><span class="hl opt">():</span>
+    _canvas<span class="hl opt">.</span><span class="hl kwd">update_idletasks</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">moveCircle</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> pos<span class="hl opt">,</span> r<span class="hl opt">,</span> endpoints<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _canvas_x<span class="hl opt">,</span> _canvas_y
+
+    x<span class="hl opt">,</span> y <span class="hl opt">=</span> pos
+<span class="hl slc">#    x0, x1 = x - r, x + r + 1</span>
+<span class="hl slc">#    y0, y1 = y - r, y + r + 1</span>
+    x0<span class="hl opt">,</span> x1 <span class="hl opt">=</span> x <span class="hl opt">-</span> r <span class="hl opt">-</span> <span class="hl num">1</span><span class="hl opt">,</span> x <span class="hl opt">+</span> r
+    y0<span class="hl opt">,</span> y1 <span class="hl opt">=</span> y <span class="hl opt">-</span> r <span class="hl opt">-</span> <span class="hl num">1</span><span class="hl opt">,</span> y <span class="hl opt">+</span> r
+    <span class="hl kwa">if</span> endpoints <span class="hl opt">==</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+        e <span class="hl opt">= [</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">359</span><span class="hl opt">]</span>
+    <span class="hl kwa">else</span><span class="hl opt">:</span>
+        e <span class="hl opt">=</span> <span class="hl kwb">list</span><span class="hl opt">(</span>endpoints<span class="hl opt">)</span>
+    <span class="hl kwa">while</span> e<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">] &gt;</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]:</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] =</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] +</span> <span class="hl num">360</span>
+
+    <span class="hl kwd">edit</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">, (</span><span class="hl str">'start'</span><span class="hl opt">,</span> e<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]), (</span><span class="hl str">'extent'</span><span class="hl opt">,</span> e<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] -</span> e<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]))</span>
+    <span class="hl kwd">move_to</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> x0<span class="hl opt">,</span> y0<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">edit</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">, *</span>args<span class="hl opt">):</span>
+    _canvas<span class="hl opt">.</span><span class="hl kwd">itemconfigure</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">, **</span><span class="hl kwb">dict</span><span class="hl opt">(</span>args<span class="hl opt">))</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">text</span><span class="hl opt">(</span>pos<span class="hl opt">,</span> color<span class="hl opt">,</span> contents<span class="hl opt">,</span> font<span class="hl opt">=</span><span class="hl str">'Helvetica'</span><span class="hl opt">,</span> size<span class="hl opt">=</span><span class="hl num">12</span><span class="hl opt">,</span> style<span class="hl opt">=</span><span class="hl str">'normal'</span><span class="hl opt">,</span> anchor<span class="hl opt">=</span><span class="hl str">&quot;nw&quot;</span><span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _canvas_x<span class="hl opt">,</span> _canvas_y
+    x<span class="hl opt">,</span> y <span class="hl opt">=</span> pos
+    font <span class="hl opt">= (</span>font<span class="hl opt">,</span> <span class="hl kwb">str</span><span class="hl opt">(</span>size<span class="hl opt">),</span> style<span class="hl opt">)</span>
+    <span class="hl kwa">return</span> _canvas<span class="hl opt">.</span><span class="hl kwd">create_text</span><span class="hl opt">(</span>x<span class="hl opt">,</span> y<span class="hl opt">,</span> fill<span class="hl opt">=</span>color<span class="hl opt">,</span> text<span class="hl opt">=</span>contents<span class="hl opt">,</span> font<span class="hl opt">=</span>font<span class="hl opt">,</span> anchor<span class="hl opt">=</span>anchor<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">changeText</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> newText<span class="hl opt">,</span> font<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">,</span> size<span class="hl opt">=</span><span class="hl num">12</span><span class="hl opt">,</span> style<span class="hl opt">=</span><span class="hl str">'normal'</span><span class="hl opt">):</span>
+    _canvas<span class="hl opt">.</span><span class="hl kwd">itemconfigure</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> text<span class="hl opt">=</span>newText<span class="hl opt">)</span>
+    <span class="hl kwa">if</span> font <span class="hl opt">!=</span> <span class="hl kwa">None</span><span class="hl opt">:</span>
+        _canvas<span class="hl opt">.</span><span class="hl kwd">itemconfigure</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> font<span class="hl opt">=(</span>font<span class="hl opt">,</span> <span class="hl str">'-%d'</span> <span class="hl opt">%</span> size<span class="hl opt">,</span> style<span class="hl opt">))</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">changeColor</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> newColor<span class="hl opt">):</span>
+    _canvas<span class="hl opt">.</span><span class="hl kwd">itemconfigure</span><span class="hl opt">(</span><span class="hl kwb">id</span><span class="hl opt">,</span> fill<span class="hl opt">=</span>newColor<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">line</span><span class="hl opt">(</span>here<span class="hl opt">,</span> there<span class="hl opt">,</span> color<span class="hl opt">=</span><span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">,</span> <span class="hl num">0</span><span class="hl opt">),</span> width<span class="hl opt">=</span><span class="hl num">2</span><span class="hl opt">):</span>
+    x0<span class="hl opt">,</span> y0 <span class="hl opt">=</span> here<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> here<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span>
+    x1<span class="hl opt">,</span> y1 <span class="hl opt">=</span> there<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> there<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]</span>
+    <span class="hl kwa">return</span> _canvas<span class="hl opt">.</span><span class="hl kwd">create_line</span><span class="hl opt">(</span>x0<span class="hl opt">,</span> y0<span class="hl opt">,</span> x1<span class="hl opt">,</span> y1<span class="hl opt">,</span> fill<span class="hl opt">=</span>color<span class="hl opt">,</span> width<span class="hl opt">=</span>width<span class="hl opt">)</span>
+
+<span class="hl slc">##############################################################################</span>
+<span class="hl slc">### Keypress handling ########################################################</span>
+<span class="hl slc">##############################################################################</span>
+
+<span class="hl slc"># We bind to key-down and key-up events.</span>
+
+_keysdown <span class="hl opt">= {}</span>
+_keyswaiting <span class="hl opt">= {}</span>
+<span class="hl slc"># This holds an unprocessed key release.  We delay key releases by up to</span>
+<span class="hl slc"># one call to keys_pressed() to get round a problem with auto repeat.</span>
+_got_release <span class="hl opt">=</span> <span class="hl kwa">None</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_keypress</span><span class="hl opt">(</span>event<span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _got_release
+    <span class="hl slc">#remap_arrows(event)</span>
+    _keysdown<span class="hl opt">[</span>event<span class="hl opt">.</span>keysym<span class="hl opt">] =</span> <span class="hl num">1</span>
+    _keyswaiting<span class="hl opt">[</span>event<span class="hl opt">.</span>keysym<span class="hl opt">] =</span> <span class="hl num">1</span>
+<span class="hl slc">#    print event.char, event.keycode</span>
+    _got_release <span class="hl opt">=</span> <span class="hl kwa">None</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_keyrelease</span><span class="hl opt">(</span>event<span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _got_release
+    <span class="hl slc">#remap_arrows(event)</span>
+    <span class="hl kwa">try</span><span class="hl opt">:</span>
+        <span class="hl kwa">del</span> _keysdown<span class="hl opt">[</span>event<span class="hl opt">.</span>keysym<span class="hl opt">]</span>
+    <span class="hl kwa">except</span><span class="hl opt">:</span>
+        <span class="hl kwa">pass</span>
+    _got_release <span class="hl opt">=</span> <span class="hl num">1</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">remap_arrows</span><span class="hl opt">(</span>event<span class="hl opt">):</span>
+    <span class="hl slc"># TURN ARROW PRESSES INTO LETTERS (SHOULD BE IN KEYBOARD AGENT)</span>
+    <span class="hl kwa">if</span> event<span class="hl opt">.</span>char <span class="hl kwa">in</span> <span class="hl opt">[</span><span class="hl str">'a'</span><span class="hl opt">,</span> <span class="hl str">'s'</span><span class="hl opt">,</span> <span class="hl str">'d'</span><span class="hl opt">,</span> <span class="hl str">'w'</span><span class="hl opt">]:</span>
+        <span class="hl kwa">return</span>
+    <span class="hl kwa">if</span> event<span class="hl opt">.</span>keycode <span class="hl kwa">in</span> <span class="hl opt">[</span><span class="hl num">37</span><span class="hl opt">,</span> <span class="hl num">101</span><span class="hl opt">]:</span> <span class="hl slc"># LEFT ARROW (win / x)</span>
+        event<span class="hl opt">.</span>char <span class="hl opt">=</span> <span class="hl str">'a'</span>
+    <span class="hl kwa">if</span> event<span class="hl opt">.</span>keycode <span class="hl kwa">in</span> <span class="hl opt">[</span><span class="hl num">38</span><span class="hl opt">,</span> <span class="hl num">99</span><span class="hl opt">]:</span> <span class="hl slc"># UP ARROW</span>
+        event<span class="hl opt">.</span>char <span class="hl opt">=</span> <span class="hl str">'w'</span>
+    <span class="hl kwa">if</span> event<span class="hl opt">.</span>keycode <span class="hl kwa">in</span> <span class="hl opt">[</span><span class="hl num">39</span><span class="hl opt">,</span> <span class="hl num">102</span><span class="hl opt">]:</span> <span class="hl slc"># RIGHT ARROW</span>
+        event<span class="hl opt">.</span>char <span class="hl opt">=</span> <span class="hl str">'d'</span>
+    <span class="hl kwa">if</span> event<span class="hl opt">.</span>keycode <span class="hl kwa">in</span> <span class="hl opt">[</span><span class="hl num">40</span><span class="hl opt">,</span> <span class="hl num">104</span><span class="hl opt">]:</span> <span class="hl slc"># DOWN ARROW</span>
+        event<span class="hl opt">.</span>char <span class="hl opt">=</span> <span class="hl str">'s'</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_clear_keys</span><span class="hl opt">(</span>event<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">):</span>
+    <span class="hl kwa">global</span> _keysdown<span class="hl opt">,</span> _got_release<span class="hl opt">,</span> _keyswaiting
+    _keysdown <span class="hl opt">= {}</span>
+    _keyswaiting <span class="hl opt">= {}</span>
+    _got_release <span class="hl opt">=</span> <span class="hl kwa">None</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">keys_pressed</span><span class="hl opt">(</span>d_o_e<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>dooneevent<span class="hl opt">,</span>
+                 d_w<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>DONT_WAIT<span class="hl opt">):</span>
+    <span class="hl kwd">d_o_e</span><span class="hl opt">(</span>d_w<span class="hl opt">)</span>
+    <span class="hl kwa">if</span> _got_release<span class="hl opt">:</span>
+        <span class="hl kwd">d_o_e</span><span class="hl opt">(</span>d_w<span class="hl opt">)</span>
+    <span class="hl kwa">return</span> _keysdown<span class="hl opt">.</span><span class="hl kwd">keys</span><span class="hl opt">()</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">keys_waiting</span><span class="hl opt">():</span>
+    <span class="hl kwa">global</span> _keyswaiting
+    keys <span class="hl opt">=</span> _keyswaiting<span class="hl opt">.</span><span class="hl kwd">keys</span><span class="hl opt">()</span>
+    _keyswaiting <span class="hl opt">= {}</span>
+    <span class="hl kwa">return</span> keys
+
+<span class="hl slc"># Block for a list of keys...</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">wait_for_keys</span><span class="hl opt">():</span>
+    keys <span class="hl opt">= []</span>
+    <span class="hl kwa">while</span> keys <span class="hl opt">== []:</span>
+        keys <span class="hl opt">=</span> <span class="hl kwd">keys_pressed</span><span class="hl opt">()</span>
+        <span class="hl kwd">sleep</span><span class="hl opt">(</span><span class="hl num">0.05</span><span class="hl opt">)</span>
+    <span class="hl kwa">return</span> keys
+
+<span class="hl kwa">def</span> <span class="hl kwd">remove_from_screen</span><span class="hl opt">(</span>x<span class="hl opt">,</span>
+                       d_o_e<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>dooneevent<span class="hl opt">,</span>
+                       d_w<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>DONT_WAIT<span class="hl opt">):</span>
+    _canvas<span class="hl opt">.</span><span class="hl kwd">delete</span><span class="hl opt">(</span>x<span class="hl opt">)</span>
+    <span class="hl kwd">d_o_e</span><span class="hl opt">(</span>d_w<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">_adjust_coords</span><span class="hl opt">(</span>coord_list<span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">):</span>
+    <span class="hl kwa">for</span> i <span class="hl kwa">in</span> <span class="hl kwb">range</span><span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">,</span> <span class="hl kwb">len</span><span class="hl opt">(</span>coord_list<span class="hl opt">),</span> <span class="hl num">2</span><span class="hl opt">):</span>
+        coord_list<span class="hl opt">[</span>i<span class="hl opt">] =</span> coord_list<span class="hl opt">[</span>i<span class="hl opt">] +</span> x
+        coord_list<span class="hl opt">[</span>i <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">] =</span> coord_list<span class="hl opt">[</span>i <span class="hl opt">+</span> <span class="hl num">1</span><span class="hl opt">] +</span> y
+    <span class="hl kwa">return</span> coord_list
+
+<span class="hl kwa">def</span> <span class="hl kwd">move_to</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">,</span>
+            d_o_e<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>dooneevent<span class="hl opt">,</span>
+            d_w<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>DONT_WAIT<span class="hl opt">):</span>
+    <span class="hl kwa">if</span> y <span class="hl kwa">is None</span><span class="hl opt">:</span>
+        <span class="hl kwa">try</span><span class="hl opt">:</span> x<span class="hl opt">,</span> y <span class="hl opt">=</span> x
+        <span class="hl kwa">except</span><span class="hl opt">:</span> <span class="hl kwa">raise</span>  <span class="hl str">'incomprehensible coordinates'</span>
+
+    horiz <span class="hl opt">=</span> <span class="hl kwa">True</span>
+    newCoords <span class="hl opt">= []</span>
+    current_x<span class="hl opt">,</span> current_y <span class="hl opt">=</span> _canvas<span class="hl opt">.</span><span class="hl kwd">coords</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">)[</span><span class="hl num">0</span><span class="hl opt">:</span><span class="hl num">2</span><span class="hl opt">]</span> <span class="hl slc"># first point</span>
+    <span class="hl kwa">for</span> coord <span class="hl kwa">in</span>  _canvas<span class="hl opt">.</span><span class="hl kwd">coords</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">):</span>
+        <span class="hl kwa">if</span> horiz<span class="hl opt">:</span>
+            inc <span class="hl opt">=</span> x <span class="hl opt">-</span> current_x
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            inc <span class="hl opt">=</span> y <span class="hl opt">-</span> current_y
+        horiz <span class="hl opt">=</span> <span class="hl kwa">not</span> horiz
+
+        newCoords<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>coord <span class="hl opt">+</span> inc<span class="hl opt">)</span>
+
+    _canvas<span class="hl opt">.</span><span class="hl kwd">coords</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">, *</span>newCoords<span class="hl opt">)</span>
+    <span class="hl kwd">d_o_e</span><span class="hl opt">(</span>d_w<span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">move_by</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">,</span> x<span class="hl opt">,</span> y<span class="hl opt">=</span><span class="hl kwa">None</span><span class="hl opt">,</span>
+            d_o_e<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>dooneevent<span class="hl opt">,</span>
+            d_w<span class="hl opt">=</span>Tkinter<span class="hl opt">.</span>tkinter<span class="hl opt">.</span>DONT_WAIT<span class="hl opt">,</span> lift<span class="hl opt">=</span><span class="hl kwa">False</span><span class="hl opt">):</span>
+    <span class="hl kwa">if</span> y <span class="hl kwa">is None</span><span class="hl opt">:</span>
+        <span class="hl kwa">try</span><span class="hl opt">:</span> x<span class="hl opt">,</span> y <span class="hl opt">=</span> x
+        <span class="hl kwa">except</span><span class="hl opt">:</span> <span class="hl kwa">raise</span> <span class="hl kwc">Exception</span><span class="hl opt">,</span> <span class="hl str">'incomprehensible coordinates'</span>
+
+    horiz <span class="hl opt">=</span> <span class="hl kwa">True</span>
+    newCoords <span class="hl opt">= []</span>
+    <span class="hl kwa">for</span> coord <span class="hl kwa">in</span>  _canvas<span class="hl opt">.</span><span class="hl kwd">coords</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">):</span>
+        <span class="hl kwa">if</span> horiz<span class="hl opt">:</span>
+            inc <span class="hl opt">=</span> x
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            inc <span class="hl opt">=</span> y
+        horiz <span class="hl opt">=</span> <span class="hl kwa">not</span> horiz
+
+        newCoords<span class="hl opt">.</span><span class="hl kwd">append</span><span class="hl opt">(</span>coord <span class="hl opt">+</span> inc<span class="hl opt">)</span>
+
+    _canvas<span class="hl opt">.</span><span class="hl kwd">coords</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">, *</span>newCoords<span class="hl opt">)</span>
+    <span class="hl kwd">d_o_e</span><span class="hl opt">(</span>d_w<span class="hl opt">)</span>
+    <span class="hl kwa">if</span> lift<span class="hl opt">:</span>
+        _canvas<span class="hl opt">.</span><span class="hl kwd">tag_raise</span><span class="hl opt">(</span><span class="hl kwb">object</span><span class="hl opt">)</span>
+
+<span class="hl kwa">def</span> <span class="hl kwd">writePostscript</span><span class="hl opt">(</span>filename<span class="hl opt">):</span>
+    <span class="hl str">&quot;Writes the current canvas to a postscript file.&quot;</span>
+    psfile <span class="hl opt">=</span> <span class="hl kwb">file</span><span class="hl opt">(</span>filename<span class="hl opt">,</span> <span class="hl str">'w'</span><span class="hl opt">)</span>
+    psfile<span class="hl opt">.</span><span class="hl kwd">write</span><span class="hl opt">(</span>_canvas<span class="hl opt">.</span><span class="hl kwd">postscript</span><span class="hl opt">(</span>pageanchor<span class="hl opt">=</span><span class="hl str">'sw'</span><span class="hl opt">,</span>
+                     y<span class="hl opt">=</span><span class="hl str">'0.c'</span><span class="hl opt">,</span>
+                     x<span class="hl opt">=</span><span class="hl str">'0.c'</span><span class="hl opt">))</span>
+    psfile<span class="hl opt">.</span><span class="hl kwd">close</span><span class="hl opt">()</span>
+
+ghost_shape <span class="hl opt">= [</span>
+    <span class="hl opt">(</span><span class="hl num">0</span><span class="hl opt">, -</span> <span class="hl num">0.5</span><span class="hl opt">),</span>
+    <span class="hl opt">(</span><span class="hl num">0.25</span><span class="hl opt">, -</span> <span class="hl num">0.75</span><span class="hl opt">),</span>
+    <span class="hl opt">(</span><span class="hl num">0.5</span><span class="hl opt">, -</span> <span class="hl num">0.5</span><span class="hl opt">),</span>
+    <span class="hl opt">(</span><span class="hl num">0.75</span><span class="hl opt">, -</span> <span class="hl num">0.75</span><span class="hl opt">),</span>
+    <span class="hl opt">(</span><span class="hl num">0.75</span><span class="hl opt">,</span> <span class="hl num">0.5</span><span class="hl opt">),</span>
+    <span class="hl opt">(</span><span class="hl num">0.5</span><span class="hl opt">,</span> <span class="hl num">0.75</span><span class="hl opt">),</span>
+    <span class="hl opt">(-</span> <span class="hl num">0.5</span><span class="hl opt">,</span> <span class="hl num">0.75</span><span class="hl opt">),</span>
+    <span class="hl opt">(-</span> <span class="hl num">0.75</span><span class="hl opt">,</span> <span class="hl num">0.5</span><span class="hl opt">),</span>
+    <span class="hl opt">(-</span> <span class="hl num">0.75</span><span class="hl opt">, -</span> <span class="hl num">0.75</span><span class="hl opt">),</span>
+    <span class="hl opt">(-</span> <span class="hl num">0.5</span><span class="hl opt">, -</span> <span class="hl num">0.5</span><span class="hl opt">),</span>
+    <span class="hl opt">(-</span> <span class="hl num">0.25</span><span class="hl opt">, -</span> <span class="hl num">0.75</span><span class="hl opt">)</span>
+  <span class="hl opt">]</span>
+
+<span class="hl kwa">if</span> __name__ <span class="hl opt">==</span> <span class="hl str">'__main__'</span><span class="hl opt">:</span>
+    <span class="hl kwd">begin_graphics</span><span class="hl opt">()</span>
+    <span class="hl kwd">clear_screen</span><span class="hl opt">()</span>
+    ghost_shape <span class="hl opt">= [(</span>x <span class="hl opt">*</span> <span class="hl num">10</span> <span class="hl opt">+</span> <span class="hl num">20</span><span class="hl opt">,</span> y <span class="hl opt">*</span> <span class="hl num">10</span> <span class="hl opt">+</span> <span class="hl num">20</span><span class="hl opt">)</span> <span class="hl kwa">for</span> x<span class="hl opt">,</span> y <span class="hl kwa">in</span> ghost_shape<span class="hl opt">]</span>
+    g <span class="hl opt">=</span> <span class="hl kwd">polygon</span><span class="hl opt">(</span>ghost_shape<span class="hl opt">,</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">,</span> <span class="hl num">1</span><span class="hl opt">))</span>
+    <span class="hl kwd">move_to</span><span class="hl opt">(</span>g<span class="hl opt">, (</span><span class="hl num">50</span><span class="hl opt">,</span> <span class="hl num">50</span><span class="hl opt">))</span>
+    <span class="hl kwd">circle</span><span class="hl opt">((</span><span class="hl num">150</span><span class="hl opt">,</span> <span class="hl num">150</span><span class="hl opt">),</span> <span class="hl num">20</span><span class="hl opt">,</span> <span class="hl kwd">formatColor</span><span class="hl opt">(</span><span class="hl num">0.7</span><span class="hl opt">,</span> <span class="hl num">0.3</span><span class="hl opt">,</span> <span class="hl num">0.0</span><span class="hl opt">),</span> endpoints<span class="hl opt">=[</span><span class="hl num">15</span><span class="hl opt">, -</span> <span class="hl num">15</span><span class="hl opt">])</span>
+    <span class="hl kwd">sleep</span><span class="hl opt">(</span><span class="hl num">2</span><span class="hl opt">)</span>
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->

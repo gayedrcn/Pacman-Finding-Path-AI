@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>ghostAgents.py</title>
+<link rel="stylesheet" type="text/css" href="highlight.css">
+</head>
+<body class="hl">
+<pre class="hl"><span class="hl slc"># ghostAgents.py</span>
+<span class="hl slc"># --------------</span>
+<span class="hl slc"># Licensing Information: Please do not distribute or publish solutions to this</span>
+<span class="hl slc"># project. You are free to use and extend these projects for educational</span>
+<span class="hl slc"># purposes. The Pacman AI projects were developed at UC Berkeley, primarily by</span>
+<span class="hl slc"># John DeNero (denero&#64;cs.berkeley.edu) and Dan Klein (klein&#64;cs.berkeley.edu).</span>
+<span class="hl slc"># Student side autograding was added by Brad Miller, Nick Hay, and Pieter </span>
+<span class="hl slc"># Abbeel in Spring 2013.</span>
+<span class="hl slc"># For more info, see http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html</span>
+
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Agent
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Actions
+<span class="hl kwa">from</span> game <span class="hl kwa">import</span> Directions
+<span class="hl kwa">import</span> random
+<span class="hl kwa">from</span> util <span class="hl kwa">import</span> manhattanDistance
+<span class="hl kwa">import</span> util
+
+<span class="hl kwa">class</span> <span class="hl kwd">GhostAgent</span><span class="hl opt">(</span> Agent <span class="hl opt">):</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> index <span class="hl opt">):</span>
+        self<span class="hl opt">.</span>index <span class="hl opt">=</span> index
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getAction</span><span class="hl opt">(</span> self<span class="hl opt">,</span> state <span class="hl opt">):</span>
+        dist <span class="hl opt">=</span> self<span class="hl opt">.</span><span class="hl kwd">getDistribution</span><span class="hl opt">(</span>state<span class="hl opt">)</span>
+        <span class="hl kwa">if</span> <span class="hl kwb">len</span><span class="hl opt">(</span>dist<span class="hl opt">) ==</span> <span class="hl num">0</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> Directions<span class="hl opt">.</span>STOP
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            <span class="hl kwa">return</span> util<span class="hl opt">.</span><span class="hl kwd">chooseFromDistribution</span><span class="hl opt">(</span> dist <span class="hl opt">)</span>
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getDistribution</span><span class="hl opt">(</span>self<span class="hl opt">,</span> state<span class="hl opt">):</span>
+        <span class="hl str">&quot;Returns a Counter encoding a distribution over actions from the provided state.&quot;</span>
+        util<span class="hl opt">.</span><span class="hl kwd">raiseNotDefined</span><span class="hl opt">()</span>
+
+<span class="hl kwa">class</span> <span class="hl kwd">RandomGhost</span><span class="hl opt">(</span> GhostAgent <span class="hl opt">):</span>
+    <span class="hl str">&quot;A ghost that chooses a legal action uniformly at random.&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">getDistribution</span><span class="hl opt">(</span> self<span class="hl opt">,</span> state <span class="hl opt">):</span>
+        dist <span class="hl opt">=</span> util<span class="hl opt">.</span><span class="hl kwd">Counter</span><span class="hl opt">()</span>
+        <span class="hl kwa">for</span> a <span class="hl kwa">in</span> state<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> self<span class="hl opt">.</span>index <span class="hl opt">):</span> dist<span class="hl opt">[</span>a<span class="hl opt">] =</span> <span class="hl num">1.0</span>
+        dist<span class="hl opt">.</span><span class="hl kwd">normalize</span><span class="hl opt">()</span>
+        <span class="hl kwa">return</span> dist
+
+<span class="hl kwa">class</span> <span class="hl kwd">DirectionalGhost</span><span class="hl opt">(</span> GhostAgent <span class="hl opt">):</span>
+    <span class="hl str">&quot;A ghost that prefers to rush Pacman, or flee when scared.&quot;</span>
+    <span class="hl kwa">def</span> <span class="hl kwd">__init__</span><span class="hl opt">(</span> self<span class="hl opt">,</span> index<span class="hl opt">,</span> prob_attack<span class="hl opt">=</span><span class="hl num">0.8</span><span class="hl opt">,</span> prob_scaredFlee<span class="hl opt">=</span><span class="hl num">0.8</span> <span class="hl opt">):</span>
+        self<span class="hl opt">.</span>index <span class="hl opt">=</span> index
+        self<span class="hl opt">.</span>prob_attack <span class="hl opt">=</span> prob_attack
+        self<span class="hl opt">.</span>prob_scaredFlee <span class="hl opt">=</span> prob_scaredFlee
+
+    <span class="hl kwa">def</span> <span class="hl kwd">getDistribution</span><span class="hl opt">(</span> self<span class="hl opt">,</span> state <span class="hl opt">):</span>
+        <span class="hl slc"># Read variables from state</span>
+        ghostState <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getGhostState</span><span class="hl opt">(</span> self<span class="hl opt">.</span>index <span class="hl opt">)</span>
+        legalActions <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getLegalActions</span><span class="hl opt">(</span> self<span class="hl opt">.</span>index <span class="hl opt">)</span>
+        pos <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getGhostPosition</span><span class="hl opt">(</span> self<span class="hl opt">.</span>index <span class="hl opt">)</span>
+        isScared <span class="hl opt">=</span> ghostState<span class="hl opt">.</span>scaredTimer <span class="hl opt">&gt;</span> <span class="hl num">0</span>
+
+        speed <span class="hl opt">=</span> <span class="hl num">1</span>
+        <span class="hl kwa">if</span> isScared<span class="hl opt">:</span> speed <span class="hl opt">=</span> <span class="hl num">0.5</span>
+
+        actionVectors <span class="hl opt">= [</span>Actions<span class="hl opt">.</span><span class="hl kwd">directionToVector</span><span class="hl opt">(</span> a<span class="hl opt">,</span> speed <span class="hl opt">)</span> <span class="hl kwa">for</span> a <span class="hl kwa">in</span> legalActions<span class="hl opt">]</span>
+        newPositions <span class="hl opt">= [(</span> pos<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">]+</span>a<span class="hl opt">[</span><span class="hl num">0</span><span class="hl opt">],</span> pos<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">]+</span>a<span class="hl opt">[</span><span class="hl num">1</span><span class="hl opt">] )</span> <span class="hl kwa">for</span> a <span class="hl kwa">in</span> actionVectors<span class="hl opt">]</span>
+        pacmanPosition <span class="hl opt">=</span> state<span class="hl opt">.</span><span class="hl kwd">getPacmanPosition</span><span class="hl opt">()</span>
+
+        <span class="hl slc"># Select best actions given the state</span>
+        distancesToPacman <span class="hl opt">= [</span><span class="hl kwd">manhattanDistance</span><span class="hl opt">(</span> pos<span class="hl opt">,</span> pacmanPosition <span class="hl opt">)</span> <span class="hl kwa">for</span> pos <span class="hl kwa">in</span> newPositions<span class="hl opt">]</span>
+        <span class="hl kwa">if</span> isScared<span class="hl opt">:</span>
+            bestScore <span class="hl opt">=</span> <span class="hl kwb">max</span><span class="hl opt">(</span> distancesToPacman <span class="hl opt">)</span>
+            bestProb <span class="hl opt">=</span> self<span class="hl opt">.</span>prob_scaredFlee
+        <span class="hl kwa">else</span><span class="hl opt">:</span>
+            bestScore <span class="hl opt">=</span> <span class="hl kwb">min</span><span class="hl opt">(</span> distancesToPacman <span class="hl opt">)</span>
+            bestProb <span class="hl opt">=</span> self<span class="hl opt">.</span>prob_attack
+        bestActions <span class="hl opt">= [</span>action <span class="hl kwa">for</span> action<span class="hl opt">,</span> distance <span class="hl kwa">in</span> <span class="hl kwb">zip</span><span class="hl opt">(</span> legalActions<span class="hl opt">,</span> distancesToPacman <span class="hl opt">)</span> <span class="hl kwa">if</span> distance <span class="hl opt">==</span> bestScore<span class="hl opt">]</span>
+
+        <span class="hl slc"># Construct distribution</span>
+        dist <span class="hl opt">=</span> util<span class="hl opt">.</span><span class="hl kwd">Counter</span><span class="hl opt">()</span>
+        <span class="hl kwa">for</span> a <span class="hl kwa">in</span> bestActions<span class="hl opt">:</span> dist<span class="hl opt">[</span>a<span class="hl opt">] =</span> bestProb <span class="hl opt">/</span> <span class="hl kwb">len</span><span class="hl opt">(</span>bestActions<span class="hl opt">)</span>
+        <span class="hl kwa">for</span> a <span class="hl kwa">in</span> legalActions<span class="hl opt">:</span> dist<span class="hl opt">[</span>a<span class="hl opt">] += (</span> <span class="hl num">1</span><span class="hl opt">-</span>bestProb <span class="hl opt">) /</span> <span class="hl kwb">len</span><span class="hl opt">(</span>legalActions<span class="hl opt">)</span>
+        dist<span class="hl opt">.</span><span class="hl kwd">normalize</span><span class="hl opt">()</span>
+        <span class="hl kwa">return</span> dist
+</pre>
+</body>
+</html>
+<!--HTML generated by highlight 3.8, http://www.andre-simon.de/-->
